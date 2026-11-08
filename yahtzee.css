@@ -1,0 +1,446 @@
+/* ====================================================================
+   Yahtzee - Celestial & Mythological Space Theme
+   Inspired by the cosmos, ancient constellations, and stellar deities.
+   =================================================================== */
+
+:root {
+    --primary-color: #8b5cf6;       /* Nebula Purple */
+    --primary-hover: #7c3aed;     /* Deep Cosmic Violet */
+    --success-color: #10b981;     /* Astral Emerald / Supernova */
+    --background-color: #0f172a;  /* Deep Space Void */
+    --surface-color: #1e293b;     /* Starlight Observable Surface */
+    --text-primary: #f8fafc;      /* Celestial White / Starlight */
+    --text-secondary: #94a3b8;    /* Meteor Grey */
+    --border-color: #334155;      /* Constellation Grid Line */
+    --held-bg: #312e81;          /* Gravitational Well / Locked Orbit */
+    --held-border: #a855f7;       /* Glowing Astral Aura */
+    --shadow-sm: 0 1px 3px rgba(139, 92, 246, 0.15);
+    --shadow-md: 0 8px 20px -4px rgba(15, 23, 42, 0.8), 0 0 15px rgba(139, 92, 246, 0.2);
+    --radius-lg: 16px;
+    --radius-md: 10px;
+    --radius-sm: 8px;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: radial-gradient(circle at 50% 20%, #1e1b4b 0%, #0f172a 70%, #020617 100%);
+    color: var(--text-primary);
+    line-height: 1.5;
+    padding: 20px;
+    min-height: 100vh;
+}
+
+.game-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 5px;
+}
+
+header h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #c084fc 0%, #38bdf8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 30px rgba(192, 132, 252, 0.3);
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+}
+
+#turn-indicator {
+    font-size: 1.05rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+/* Dice Section Styles - Cosmic Observatory */
+.dice-section {
+    background: linear-gradient(145deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95));
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    box-shadow: var(--shadow-md);
+    text-align: center;
+    backdrop-filter: blur(12px);
+}
+
+.dice-container {
+    display: flex;
+    gap: 18px;
+    justify-content: center;
+    margin-bottom: 24px;
+}
+
+.die {
+    width: 70px;
+    height: 70px;
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.85rem;
+    font-weight: bold;
+    color: var(--text-primary);
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.die:hover {
+    border-color: var(--primary-color);
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 6px 16px rgba(139, 92, 246, 0.3);
+}
+
+.die.held {
+    border-color: var(--held-border);
+    background: linear-gradient(135deg, #312e81 0%, #1e1b4b 100%);
+    color: #c084fc;
+    transform: translateY(-5px);
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.4), inset 0 0 10px rgba(168, 85, 247, 0.2);
+}
+
+.dice-controls {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+}
+
+button {
+    background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+    color: white;
+    border: none;
+    padding: 12px 28px;
+    border-radius: var(--radius-sm);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+    letter-spacing: 0.5px;
+}
+
+button:hover {
+    background: linear-gradient(135deg, #7c3aed `/* ... */` 0%, #5b21b6 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(139, 92, 246, 0.5);
+}
+
+button:active {
+    transform: translateY(1px);
+}
+
+.secondary-btn {
+    background: linear-gradient(135deg, #475569 0%, #334155 100%);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.secondary-btn:hover {
+    background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+    box-shadow: 0 6px 16px rgba(71, 85, 105, 0.4);
+}
+
+/* Split Column Scorecard Section - Constellation Codex */
+.scorecard-section {
+    background: linear-gradient(145deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95));
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    box-shadow: var(--shadow-md);
+    backdrop-filter: blur(12px);
+}
+
+.scorecard-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+@media (max-width: 768px) {
+    .scorecard-grid { grid-template-columns: 1fr; }
+}
+
+.scorecard-column h2 {
+    font-size: 1.25rem;
+    color: #c084fc;
+    margin-bottom: 16px;
+    border-bottom: 2px solid rgba(139, 92, 246, 0.3);
+    padding-bottom: 8px;
+    letter-spacing: 0.5px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 10px;
+}
+
+th, td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+th {
+    background-color: rgba(15, 23, 42, 0.6);
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+tbody tr:hover {
+    background-color: rgba(139, 92, 246, 0.08);
+}
+
+.score-val {
+    font-weight: bold;
+    color: var(--success-color);
+    text-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+}
+
+tfoot tr td {
+    font-weight: bold;
+    background-color: rgba(15, 23, 42, 0.8);
+    border-top: 2px solid var(--primary-color);
+    color: var(--text-primary);
+}
+
+/* Toast Event Notification */
+#event-notification {
+    background: linear-gradient(135deg, #312e81 0%, #1e1b4b 100%) !important;
+    border: 1px solid #8b5cf6 !important;
+    color: #e2e8f0 !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 0 20px rgba(139, 92, 246, 0.4) !important;
+}
+
+
+/* ====================================================================
+   Menu & Modal Styles
+   =================================================================== */
+.menu-body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: radial-gradient(circle at 50% 20%, #1e1b4b 0%, #0f172a 70%, #020617 100%);
+}
+
+.menu-container {
+    width: 100%;
+    max-width: 500px;
+    padding: 20px;
+}
+
+.menu-card {
+    background: linear-gradient(145deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95));
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: var(--radius-lg);
+    padding: 40px 30px;
+    text-align: center;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.7), 0 0 20px rgba(139, 92, 246, 0.2);
+    backdrop-filter: blur(12px);
+}
+
+.menu-card h1 {
+    font-size: 3rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #c084fc 0%, #38bdf8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 5px;
+}
+
+.menu-card h2 {
+    font-size: 1.25rem;
+    color: #c084fc;
+    margin-bottom: 10px;
+    letter-spacing: 1px;
+}
+
+.menu-subtitle {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    margin-bottom: 35px;
+}
+
+.menu-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.menu-btn {
+    width: 100%;
+    padding: 14px 20px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.primary-menu-btn {
+    background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+    color: white;
+    border: none;
+}
+
+.primary-menu-btn:hover {
+    background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
+}
+
+.secondary-menu-btn {
+    background: rgba(30, 41, 59, 0.8);
+    color: #e2e8f0;
+    border: 1px solid #475569;
+}
+
+.secondary-menu-btn:hover {
+    background: rgba(51, 65, 85, 0.9);
+    border-color: #8b5cf6;
+    transform: translateY(-2px);
+}
+
+/* Modal Overlay */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(2, 6, 23, 0.8);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: 20px;
+}
+
+.modal-content {
+    background: linear-gradient(145deg, #1e293b, #0f172a);
+    border: 2px solid #8b5cf6;
+    border-radius: var(--radius-lg);
+    padding: 30px;
+    max-width: 500px;
+    width: 100%;
+    color: #f8fafc;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8), 0 0 25px rgba(139, 92, 246, 0.4);
+}
+
+.modal-content h2 {
+    color: #c084fc;
+    margin-bottom: 15px;
+    font-size: 1.4rem;
+}
+
+.modal-content p {
+    color: #cbd5e1;
+    margin-bottom: 15px;
+    font-size: 0.95rem;
+}
+
+.modal-content ul {
+    list-style-type: disc;
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    color: #cbd5e1;
+    font-size: 0.9rem;
+    text-align: left;
+}
+
+
+/* ====================================================================
+   Cosmic Activity Stream Styles (Integrated Theme)
+   =================================================================== */
+.activity-section {
+    background: linear-gradient(145deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95));
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    box-shadow: var(--shadow-md);
+    backdrop-filter: blur(12px);
+}
+
+.activity-section h2 {
+    font-size: 1.2rem;
+    color: #c084fc;
+    margin-bottom: 14px;
+    border-bottom: 2px solid rgba(139, 92, 246, 0.3);
+    padding-bottom: 8px;
+    letter-spacing: 0.5px;
+}
+
+.activity-log-box {
+    background: linear-gradient(135deg, #020617 0%, #0f172a 100%);
+    border: 1px solid rgba(139, 92, 246, 0.25);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    max-height: 200px;
+    overflow-y: auto;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.88rem;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+
+.log-item {
+    padding: 6px 10px;
+    border-radius: 6px;
+    background: rgba(30, 41, 59, 0.6);
+    border-left: 3px solid #8b5cf6;
+    transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.log-item:hover {
+    background: rgba(49, 46, 129, 0.4);
+    transform: translateX(2px);
+}
+
+.log-time {
+    color: #64748b;
+    margin-right: 8px;
+    font-weight: 500;
+}
+
+.log-chance { border-left-color: #38bdf8; color: #7dd3fc; }
+.log-score { border-left-color: #10b981; color: #6ee7b7; }
+.log-roll { border-left-color: #f59e0b; color: #fcd34d; }
+.log-system { border-left-color: #ec4899; color: #f472b6; }
+.log-action { border-left-color: #a855f7; color: #d8b4fe; }
+
+
+/* Selected Scorecard Category Style */
+.score-val.bound {
+    color: #38bdf8 !important; /* Starlight Cyan for Bound Categories */
+    background: rgba(56, 189, 248, 0.08);
+    font-weight: 700;
+    cursor: default !important;
+}

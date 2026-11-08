@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yahtzee - Celestial & Mythological Edition</title>
+    <link rel="stylesheet" href="yahtzee.css">
+</head>
+<body>
+
+<div class="game-container">
+    <header>
+        <h1>Yahtzee: Pantheon of the Cosmos</h1>
+        <p id="turn-indicator">Orbits Remaining: <span id="rolls-left">3</span></p>
+    </header>
+
+    <!-- Cosmic Game Board Hub -->
+    <div class="game-hub">
+        <!-- Left Panel: Chance Card & Dice Observatory -->
+        <div class="observatory-panel">
+            <!-- Chance Card Display Box -->
+            <div class="chance-card-box" id="chance-card-container">
+                <div class="card-header">Cosmic Chance Card</div>
+                <div id="card-description" class="card-body">Draw a card to reveal fate...</div>
+            </div>
+
+            <!-- Dice Rolling Observatory -->
+            <section class="dice-section">
+                <div class="section-title">Stellar Dice Pool</div>
+                <div id="dice-pool" class="dice-container"></div>
+                <div class="dice-controls">
+                    <button id="roll-btn">Invoke Starlight (Roll)</button>
+                    <button id="reset-btn" class="secondary-btn">Main Menu</button>
+                </div>
+            </section>
+        </div>
+
+        <!-- Right Panel: Split Scorecard Codex -->
+        <section class="scorecard-section">
+            <div class="scorecard-grid">
+                <div class="scorecard-column">
+                    <h2>Celestial Deities (Upper)</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Deity / Sphere</th>
+                                <th>Score</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scorecard-body-upper"></tbody>
+                        <tfoot>
+                            <tr>
+                                <td><strong>Celestial Subtotal</strong></td>
+                                <td id="upper-subtotal-display">0</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Divine Blessing (35 if ≥ 63)</strong></td>
+                                <td id="upper-bonus-display">0</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <div class="scorecard-column">
+                    <h2>Cosmic Constellations (Lower)</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Constellation</th>
+                                <th>Score</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scorecard-body-lower"></tbody>
+                        <tfoot>
+                            <tr>
+                                <td><strong>Pantheon Grand Total</strong></td>
+                                <td id="grand-total-display">0</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Dynamic Activity Log Section -->
+    <section class="activity-section">
+        <h2>Cosmic Activity Stream</h2>
+        <div id="activity-log-container" class="activity-log-box"></div>
+    </section>
+</div>
+
+<script src="scoring.js"></script>
+<script src="ScoreBoard.js"></script>
+<script src="chanceCards.js"></script>
+<script src="activity.js"></script>
+<script src="dice.js"></script>
+<script src="diceEvents.js"></script>
+<script src="category.js"></script>
+<script src="yahtzee.js"></script>
+
+</body>
+</html>

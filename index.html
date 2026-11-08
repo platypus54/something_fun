@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yahtzee: Pantheon of the Cosmos - Main Menu</title>
+    <link rel="stylesheet" href="yahtzee.css">
+</head>
+<body class="menu-body">
+
+<div class="menu-container">
+    <div class="menu-card">
+        <h1>Yahtzee</h1>
+        <h2>Pantheon of the Cosmos</h2>
+        <p class="menu-subtitle">A Mythological Space & Chance Card Edition</p>
+
+        <div class="menu-actions">
+            <button id="new-game-btn" class="menu-btn primary-menu-btn">New Game</button>
+            <button id="instructions-btn" class="menu-btn secondary-menu-btn">Cosmic Rules</button>
+        </div>
+    </div>
+</div>
+
+<!-- Instructions Modal -->
+<div id="instructions-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <h2>Cosmic Rules & Pantheon Guide</h2>
+        <p>Welcome, Traveler, to Yahtzee: Pantheon of the Cosmos.</p>
+        <ul>
+            <li><strong>Split Scorecard:</strong> Upper Deities (Ones through Sixes) on the left, Lower Constellations on the right.</li>
+            <li><strong>Chance Cards:</strong> Drawn at the start of every round. They grant divine blessings (+5 to +15 pts), cosmic drag (-5 to -15 pts), Supernova (instant Yahtzee), or Black Hole (set a category to zero).</li>
+            <li><strong>Objective:</strong> Align all 13 celestial constellations to achieve the highest possible Pantheon score!</li>
+        </ul>
+        <button id="close-modal-btn" class="menu-btn secondary-menu-btn" style="margin-top: 20px;">Close Guide</button>
+    </div>
+</div>
+
+<script>
+    document.getElementById('new-game-btn').onclick = () => {
+        window.location.href = 'main.html';
+    };
+
+    const modal = document.getElementById('instructions-modal');
+    document.getElementById('instructions-btn').onclick = () => {
+        modal.style.display = 'flex';
+    };
+    document.getElementById('close-modal-btn').onclick = () => {
+        modal.style.display = 'none';
+    };
+    window.onclick = (event) => {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+    };
+</script>
+
+</body>
+</html>
