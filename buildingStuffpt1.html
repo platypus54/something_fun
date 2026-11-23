@@ -3,1573 +3,2483 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>HR Building Permits Generator — City of Chesapeake 3D Mechanical Permit Visualizer</title>
+  <title>HR Building Permits Generator — Hampton Roads All-Building & Trade 3D Permit Visualizer</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <script type="importmap">
-    {
-      "imports": {
-        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
-      }
-    }
-  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
   <style>
     body {
       font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: #070d19;
-      color: #f8fafc;
+      background-color: #090d16;
+      color: #e2e8f0;
       overflow-x: hidden;
     }
-    #viewport-container {
-      position: relative;
-      width: 100%;
-      height: 520px;
-      min-height: 400px;
-      border-radius: 0.75rem;
-      overflow: hidden;
-      background: radial-gradient(circle at 50% 25%, #16243d 0%, #09101f 100%);
+    .font-mono-code {
+      font-family: 'JetBrains Mono', monospace;
     }
-    @media (min-width: 1024px) {
-      #viewport-container {
-        height: 650px;
-      }
-    }
-    canvas {
-      display: block;
-      width: 100%;
-      height: 100%;
-      touch-action: none;
-    }
-    .callout-label {
-      position: absolute;
-      transform: translate(-50%, -120%);
-      pointer-events: auto;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: transform 0.12s ease, background-color 0.15s ease, border-color 0.15s ease;
-      user-select: none;
-    }
-    .callout-label:hover {
-      transform: translate(-50%, -125%) scale(1.04);
-      z-index: 30;
-    }
-    .custom-scroll::-webkit-scrollbar {
+    /* Custom subtle scrollbars */
+    ::-webkit-scrollbar {
       width: 6px;
+      height: 6px;
     }
-    .custom-scroll::-webkit-scrollbar-track {
-      background: rgba(15, 23, 42, 0.55);
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
     }
-    .custom-scroll::-webkit-scrollbar-thumb {
-      background: rgba(148, 163, 184, 0.35);
+    ::-webkit-scrollbar-thumb {
+      background: rgba(71, 85, 105, 0.7);
       border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(100, 116, 139, 0.9);
+    }
+    @keyframes pulseBeacon {
+      0%, 100% { transform: scale(1); opacity: 0.95; }
+      50% { transform: scale(1.12); opacity: 0.65; }
+    }
+    .beacon-pulse {
+      animation: pulseBeacon 1.6s infinite ease-in-out;
+    }
+    .callout-pill {
+      pointer-events: auto;
+      transform: translate(-50%, -100%);
+      transition: transform 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+    }
+    .callout-pill:hover {
+      transform: translate(-50%, -105%) scale(1.04);
+      z-index: 40;
     }
   </style>
 </head>
-<body class="min-h-screen flex flex-col bg-slate-950 text-slate-100">
-  <!-- Top Header -->
-  <header class="border-b border-slate-800/90 bg-slate-900/95 backdrop-blur px-4 py-3 sm:px-6">
-    <div class="max-w-[1440px] mx-auto flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-      <div class="flex items-center gap-3">
-        <div class="h-10 w-10 rounded-xl bg-sky-500/15 border border-sky-400/40 flex flex-col items-center justify-center text-sky-300 font-extrabold text-xs leading-tight shrink-0">
-          <span>HR</span>
-          <span class="text-[9px] text-amber-300">CHES</span>
+<body class="min-h-screen flex flex-col bg-slate-950 text-slate-100 select-none">
+
+  <!-- TOP HEADER BAR -->
+  <header class="bg-slate-900/95 border-b border-slate-800 px-3 sm:px-5 py-2.5 flex flex-wrap items-center justify-between gap-3 z-30 shadow-lg">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-500 via-blue-600 to-indigo-700 flex items-center justify-center shadow-md shadow-sky-900/40 shrink-0">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 10.5L12 3l9 7.5M5 9.5V20h14V9.5M9 20v-6h6v6" />
+        </svg>
+      </div>
+      <div>
+        <div class="flex items-center gap-2 flex-wrap">
+          <h1 class="text-sm sm:text-base font-extrabold tracking-tight text-white">HR Building Permits Generator</h1>
+          <span class="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-500/30">
+            All-Building &amp; Trade 3D Visualizer
+          </span>
         </div>
-        <div>
-          <div class="flex flex-wrap items-center gap-2">
-            <h1 class="text-sm sm:text-base lg:text-lg font-bold tracking-tight text-white">
-              HR Building Permits Generator — City of Chesapeake 3D Mechanical Permit Visualizer
-            </h1>
-            <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-400/30">
-              eBUILD • VA USBC / VCC
-            </span>
-          </div>
-          <p class="text-xs text-slate-400">
-            Dept. of Development &amp; Permits • IMC / IRC Ch. 12–23 • IFGC • IECC • IFC • NFPA 70 • IZC Ch. 8
-          </p>
-        </div>
+        <p class="text-[11px] text-slate-400">Hampton Roads Regional USBC / VCC &amp; ICC Permit Engine • Synthetic Non-PII Mode</p>
+      </div>
+    </div>
+
+    <!-- Jurisdiction, Code Path & Synthetic App Controls -->
+    <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+      <!-- Jurisdiction Selector -->
+      <div class="flex items-center bg-slate-950/90 border border-slate-700/80 rounded-xl px-2.5 py-1.5">
+        <span class="text-[10px] uppercase tracking-wider text-slate-400 mr-2 font-semibold">AHJ:</span>
+        <select id="jurisdictionSelect" aria-label="Hampton Roads Jurisdiction" class="bg-transparent text-xs font-semibold text-sky-300 focus:outline-none cursor-pointer pr-1">
+          <!-- Populated by JS -->
+        </select>
       </div>
 
-      <!-- Building Archetype Quick Switcher -->
-      <div class="flex flex-wrap items-center gap-2 text-xs">
-        <span class="text-slate-400 font-medium">Structure Model:</span>
-        <div class="inline-flex rounded-lg bg-slate-950 p-1 border border-slate-800">
-          <button id="btn-bldg-res" class="bldg-btn px-3 py-1.5 rounded-md font-semibold bg-sky-500 text-slate-950 transition">
-            Residential (IRC 1-/2-Fam)
-          </button>
-          <button id="btn-bldg-com" class="bldg-btn px-3 py-1.5 rounded-md font-medium text-slate-300 hover:text-white transition">
-            Commercial (IBC / IMC)
-          </button>
-        </div>
+      <!-- Building Classification Toggle -->
+      <div class="flex items-center bg-slate-950/90 border border-slate-700/80 rounded-xl p-1" role="group" aria-label="Building Code Path">
+        <button id="btnCodeIRC" type="button" class="px-2.5 py-1 rounded-lg text-xs font-semibold transition bg-sky-600 text-white shadow">
+          Residential (IRC)
+        </button>
+        <button id="btnCodeIBC" type="button" class="px-2.5 py-1 rounded-lg text-xs font-semibold transition text-slate-400 hover:text-white">
+          Commercial (IBC/VCC)
+        </button>
       </div>
+
+      <!-- Randomize Synthetic Application Button -->
+      <button id="btnRandomizeApp" type="button" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-slate-200 flex items-center gap-1.5 transition" title="Generate new non-PII synthetic application metadata">
+        <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+        <span>New Synthetic ID</span>
+      </button>
     </div>
   </header>
 
-  <!-- Main Workspace -->
-  <main class="flex-1 max-w-[1440px] w-full mx-auto p-4 sm:p-5 grid grid-cols-1 lg:grid-cols-12 gap-5">
-    <!-- Left Column: 3D Interactive Viewport + Equipment Chips + Camera Controls -->
-    <section class="lg:col-span-7 flex flex-col gap-3.5">
-      <!-- Clickable Mechanical Equipment Selector Bar -->
-      <div class="bg-slate-900/85 border border-slate-800 rounded-xl p-3">
-        <div class="flex items-center justify-between gap-2 mb-2">
-          <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-            Clickable 3D Mechanical Equipment Nodes (Select in 3D or Below)
-          </span>
-          <span id="active-bldg-badge" class="text-[11px] font-semibold text-sky-300">
-            Active: Residential IRC Dwelling
-          </span>
+  <!-- PRESET SCENARIOS BAR -->
+  <div class="bg-slate-900/70 border-b border-slate-800/90 px-3 sm:px-5 py-2 flex items-center gap-2 overflow-x-auto">
+    <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 shrink-0 mr-1">Presets:</span>
+    <div id="presetButtonsContainer" class="flex items-center gap-2 shrink-0">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+
+  <!-- MAIN 3-COLUMN WORKSPACE -->
+  <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 min-h-0">
+
+    <!-- LEFT DRAWER: ALL BUILDING & TRADE SCOPE CATALOG -->
+    <aside class="lg:col-span-3 bg-slate-900/80 border-b lg:border-b-0 lg:border-r border-slate-800 flex flex-col max-h-[46vh] lg:max-h-[calc(100vh-108px)]">
+      <div class="p-3 border-b border-slate-800 flex items-center justify-between gap-2">
+        <div>
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300">Permit Scopes &amp; 3D Nodes</h2>
+          <p class="text-[11px] text-slate-400">Toggle scopes in application or click in 3D</p>
         </div>
-        <div id="equipment-chips" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
+        <button id="btnClearScopes" type="button" class="text-[11px] px-2 py-1 rounded-lg bg-slate-800 hover:bg-rose-950/70 text-slate-300 hover:text-rose-300 border border-slate-700 transition">
+          Clear All
+        </button>
       </div>
 
-      <!-- 3D Viewport Card -->
-      <div class="bg-slate-900/85 border border-slate-800 rounded-xl p-3 flex flex-col gap-3">
-        <!-- Toolbar: View Modes + Labels Toggle -->
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex flex-wrap items-center gap-1.5">
-            <span class="text-xs font-semibold text-slate-400 mr-1">View Mode:</span>
-            <button data-mode="cutaway" class="mode-btn px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-sky-500 text-slate-950 transition">
-              Cutaway / X-Ray Walls
-            </button>
-            <button data-mode="solid" class="mode-btn px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-200 hover:bg-slate-700 transition">
-              Solid Exterior
-            </button>
-            <button data-mode="discipline" class="mode-btn px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-200 hover:bg-slate-700 transition">
-              Discipline Color-Coding
-            </button>
-          </div>
+      <!-- Domain Filter Tabs -->
+      <div class="px-3 pt-2 pb-1.5 border-b border-slate-800/80 flex gap-1 overflow-x-auto text-[11px] font-semibold">
+        <button data-domain-filter="all" class="domain-filter-btn px-2.5 py-1 rounded-lg bg-sky-600/25 text-sky-300 border border-sky-500/40">All (26)</button>
+        <button data-domain-filter="building" class="domain-filter-btn px-2.5 py-1 rounded-lg text-slate-400 hover:text-slate-200">Building (9)</button>
+        <button data-domain-filter="mechanical" class="domain-filter-btn px-2.5 py-1 rounded-lg text-slate-400 hover:text-slate-200">Mech (9)</button>
+        <button data-domain-filter="trade" class="domain-filter-btn px-2.5 py-1 rounded-lg text-slate-400 hover:text-slate-200">MEP/Gas (8)</button>
+      </div>
 
-          <button id="toggle-labels-btn" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 border border-slate-700 text-sky-300 hover:bg-slate-700 transition">
-            3D Callout Labels: ON
-          </button>
+      <!-- Search Filter -->
+      <div class="px-3 py-2 border-b border-slate-800/80">
+        <input id="scopeSearchInput" type="text" placeholder="Filter building, HVAC, plumbing, gas, elec..." class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500" />
+      </div>
+
+      <!-- Scrollable Catalog List -->
+      <div id="catalogListContainer" class="flex-1 overflow-y-auto p-2.5 space-y-1.5">
+        <!-- Populated by JS -->
+      </div>
+    </aside>
+
+    <!-- CENTER STAGE: 3D INTERACTIVE VIEWPORT -->
+    <section class="lg:col-span-5 relative bg-slate-950 flex flex-col min-h-[430px] lg:h-[calc(100vh-108px)] overflow-hidden">
+
+      <!-- Top Floating Camera & View Controls -->
+      <div class="absolute top-3 left-3 right-3 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+        <!-- View Modes -->
+        <div class="flex items-center gap-1 bg-slate-900/90 backdrop-blur-md border border-slate-700/80 rounded-xl p-1 pointer-events-auto shadow-lg">
+          <button id="viewCutaway" type="button" class="view-mode-btn px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-sky-600 text-white">Cutaway / X-Ray</button>
+          <button id="viewSolid" type="button" class="view-mode-btn px-2.5 py-1 rounded-lg text-[11px] font-semibold text-slate-300 hover:text-white">Solid Exterior</button>
+          <button id="viewDiscipline" type="button" class="view-mode-btn px-2.5 py-1 rounded-lg text-[11px] font-semibold text-slate-300 hover:text-white">Discipline Colors</button>
         </div>
 
-        <!-- Camera Presets Bar -->
-        <div class="flex flex-wrap items-center gap-1.5">
-          <span class="text-xs font-semibold text-slate-400 mr-1">Camera Presets:</span>
-          <button data-cam="overview" class="cam-btn px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-800 border border-slate-700 text-slate-200 hover:bg-slate-700 transition">
-            Overview
-          </button>
-          <button data-cam="rooftop" class="cam-btn px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-800 border border-slate-700 text-slate-200 hover:bg-slate-700 transition">
-            Rooftop / Exterior
-          </button>
-          <button data-cam="mechroom" class="cam-btn px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-800 border border-slate-700 text-slate-200 hover:bg-slate-700 transition">
-            Interior Mech Room
-          </button>
-          <button data-cam="ductvent" class="cam-btn px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-800 border border-slate-700 text-slate-200 hover:bg-slate-700 transition">
-            Duct &amp; Venting
-          </button>
-          <button data-cam="reset" class="cam-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 border border-sky-500/40 text-sky-300 hover:bg-slate-700 transition ml-auto">
-            Reset Orbit
-          </button>
+        <!-- Callout Toggle -->
+        <button id="btnToggleLabels" type="button" class="pointer-events-auto px-2.5 py-1.5 rounded-xl bg-slate-900/90 backdrop-blur-md border border-slate-700/80 text-[11px] font-semibold text-sky-300 hover:bg-slate-800 shadow-lg flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+          <span>3D Labels: ON</span>
+        </button>
+      </div>
+
+      <!-- 3D WebGL Container -->
+      <div id="threeCanvasContainer" class="w-full h-full relative cursor-grab active:cursor-grabbing"></div>
+
+      <!-- 2D Isometric Fallback Canvas (shown automatically if WebGL fails) -->
+      <canvas id="fallback2dCanvas" class="hidden w-full h-full"></canvas>
+
+      <!-- Projected 3D Callout Labels Overlay -->
+      <div id="calloutOverlay" class="absolute inset-0 pointer-events-none overflow-hidden z-10"></div>
+
+      <!-- Active 3D Spatial Gate Alerts (Bottom-Left above Camera Bar) -->
+      <div id="spatialAlertsBanner" class="absolute bottom-14 left-3 right-3 z-20 flex flex-wrap gap-2 pointer-events-none">
+        <!-- Populated dynamically when CHES_EXT_SITE_PLAN or Chimney/Vent Gate is active -->
+      </div>
+
+      <!-- Bottom Camera Presets Bar -->
+      <div class="absolute bottom-3 left-3 right-3 z-20 flex items-center justify-between gap-2 pointer-events-none">
+        <div class="flex items-center gap-1 bg-slate-900/90 backdrop-blur-md border border-slate-700/80 rounded-xl p-1 overflow-x-auto pointer-events-auto shadow-lg">
+          <button data-cam="overview" class="cam-preset-btn px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-800 text-sky-300">Overview</button>
+          <button data-cam="site" class="cam-preset-btn px-2.5 py-1 rounded-lg text-[11px] font-semibold text-slate-300 hover:text-white">Site &amp; Setbacks</button>
+          <button data-cam="exterior" class="cam-preset-btn px-2.5 py-1 rounded-lg text-[11px] font-semibold text-slate-300 hover:text-white">Exterior &amp; Pad</button>
+          <button data-cam="interior" class="cam-preset-btn px-2.5 py-1 rounded-lg text-[11px] font-semibold text-slate-300 hover:text-white">Interior MEP Core</button>
+          <button data-cam="roof" class="cam-preset-btn px-2.5 py-1 rounded-lg text-[11px] font-semibold text-slate-300 hover:text-white">Roof &amp; Vent Gate</button>
+          <button data-cam="reset" class="cam-preset-btn px-2.5 py-1 rounded-lg text-[11px] font-semibold text-amber-300 hover:text-amber-200">Reset Orbit</button>
         </div>
 
-        <!-- 3D / 2D Fallback Canvas Wrapper -->
-        <div id="viewport-container" class="border border-slate-800 shadow-inner">
-          <canvas id="render-canvas"></canvas>
-          <div id="labels-overlay" class="absolute inset-0 pointer-events-none overflow-hidden"></div>
-
-          <!-- Discipline Color Legend -->
-          <div class="pointer-events-none absolute bottom-3 left-3 right-3 bg-slate-950/85 backdrop-blur border border-slate-800 rounded-lg px-3 py-2 text-[11px] text-slate-300 flex flex-wrap items-center justify-between gap-2">
-            <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
-              <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-sky-400"></span>Mechanical (IMC/IRC)</span>
-              <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>Fuel Gas (IFGC)</span>
-              <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-yellow-300"></span>Electrical (NFPA 70)</span>
-              <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>Zoning/Site (IZC)</span>
-              <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>Fire (IFC)</span>
-              <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-purple-400"></span>Energy (IECC)</span>
-            </div>
-            <span id="renderer-mode-tag" class="text-[10px] font-semibold text-slate-400">
-              WebGL 3D • Click Node / Drag Orbit
-            </span>
-          </div>
+        <div class="hidden sm:flex items-center gap-2 bg-slate-900/90 border border-slate-800 rounded-xl px-2.5 py-1 text-[10px] text-slate-400 pointer-events-auto">
+          <span>Drag: Orbit</span> • <span>Right-Drag: Pan</span> • <span>Scroll: Zoom</span>
         </div>
       </div>
     </section>
 
-    <!-- Right Column: Interactive Chesapeake / VA USBC / VCC Permit Rules Evaluator HUD -->
-    <aside class="lg:col-span-5 bg-slate-900/90 border border-slate-800 rounded-xl p-4 sm:p-5 flex flex-col gap-4 custom-scroll lg:max-h-[840px] lg:overflow-y-auto">
-      <!-- Interactive Parameter Overrides -->
-      <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5">
-        <div class="flex items-center justify-between mb-2.5">
-          <h2 class="text-xs font-bold uppercase tracking-wider text-sky-300">
-            Chesapeake / VA USBC Rule Parameters
-          </h2>
-          <span class="text-[11px] text-slate-400">Live Evaluator</span>
+    <!-- RIGHT INSPECTOR HUD: LIVE UNIFIED ROUTING PACKET & CODE EVALUATOR -->
+    <aside class="lg:col-span-4 bg-slate-900/90 border-t lg:border-t-0 lg:border-l border-slate-800 flex flex-col lg:h-[calc(100vh-108px)]">
+
+      <!-- Synthetic Application Header Card -->
+      <div class="p-3.5 border-b border-slate-800 bg-slate-900">
+        <div class="flex items-start justify-between gap-2">
+          <div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <span id="hudAppNumber" class="font-mono-code text-xs font-bold text-sky-300 bg-sky-950/80 border border-sky-700/50 px-2 py-0.5 rounded-lg">PRM-2026-CHES-SYN-1042</span>
+              <span id="hudPortalBadge" class="text-[11px] font-semibold text-emerald-300 bg-emerald-950/70 border border-emerald-700/40 px-2 py-0.5 rounded-lg">Portal: eBUILD</span>
+            </div>
+            <p id="hudAddressLine" class="text-xs text-slate-300 font-medium mt-1">1408 Synthetic Oak Way, Chesapeake, VA 23322 • Parcel 0410000009901</p>
+            <p id="hudApplicantLine" class="text-[11px] text-slate-400">Applicant: Synthetic Builder LLC (VA Class A #2705-SYN-001) • Zone R-15</p>
+          </div>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
-          <div>
-            <label for="param-building" class="block text-[11px] font-medium text-slate-400 mb-1">Building Type</label>
-            <select id="param-building" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-slate-100 focus:outline-none focus:border-sky-400">
-              <option value="residential">Residential (IRC 1-/2-Fam)</option>
-              <option value="commercial">Commercial (IBC / IMC)</option>
-            </select>
-          </div>
-          <div>
-            <label for="param-action" class="block text-[11px] font-medium text-slate-400 mb-1">Action Type</label>
-            <select id="param-action" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-slate-100 focus:outline-none focus:border-sky-400">
-              <option value="new_install">New Install</option>
-              <option value="replacement_like_for_like">Like-for-Like Replacement</option>
-              <option value="alteration">Alteration / Upgrade</option>
-            </select>
-          </div>
-          <div>
-            <label for="param-fuel" class="block text-[11px] font-medium text-slate-400 mb-1">Fuel / Energy Source</label>
-            <select id="param-fuel" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-slate-100 focus:outline-none focus:border-sky-400">
-              <option value="electric">Electric / Heat Pump</option>
-              <option value="natural_gas">Natural Gas / Propane</option>
-            </select>
-          </div>
-          <div>
-            <label for="param-placement" class="block text-[11px] font-medium text-slate-400 mb-1">Equipment Placement</label>
-            <select id="param-placement" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-slate-100 focus:outline-none focus:border-sky-400">
-              <option value="exterior_rooftop">Exterior Grade / Rooftop</option>
-              <option value="interior_mech">Interior / Attic / Mech Room</option>
-            </select>
-          </div>
+
+        <!-- Master Determination & Gate Status Pills -->
+        <div id="hudStatusBadges" class="mt-2.5 flex flex-wrap gap-1.5">
+          <!-- Populated by JS -->
         </div>
       </div>
 
-      <!-- Dynamic Rule Output Container -->
-      <div id="hud-output" class="flex flex-col gap-4"></div>
+      <!-- Inspector Navigation Tabs -->
+      <div class="grid grid-cols-4 border-b border-slate-800 bg-slate-950/60 text-[11px] font-bold">
+        <button data-hud-tab="inspector" class="hud-tab-btn py-2.5 px-2 border-b-2 border-sky-500 text-sky-300 bg-slate-900/60">
+          1. Node &amp; Scopes
+        </button>
+        <button data-hud-tab="subpermits" class="hud-tab-btn py-2.5 px-2 border-b-2 border-transparent text-slate-400 hover:text-slate-200">
+          2. Permits (<span id="countSubPermits">0</span>)
+        </button>
+        <button data-hud-tab="submittals" class="hud-tab-btn py-2.5 px-2 border-b-2 border-transparent text-slate-400 hover:text-slate-200">
+          3. Submittals (<span id="countSubmittals">0</span>)
+        </button>
+        <button data-hud-tab="inspections" class="hud-tab-btn py-2.5 px-2 border-b-2 border-transparent text-slate-400 hover:text-slate-200">
+          4. Inspect (<span id="countMilestones">0</span>)
+        </button>
+      </div>
+
+      <!-- Tab Body Container -->
+      <div class="flex-1 overflow-y-auto p-3.5 space-y-3">
+
+        <!-- TAB 1: SELECTED NODE INSPECTOR & ACTIVE LINE ITEMS -->
+        <div id="tabPanelInspector" class="hud-panel space-y-3">
+          <!-- Selected Node Configuration Card -->
+          <div id="selectedNodeCard" class="rounded-2xl bg-slate-950/90 border border-slate-800 p-3.5 shadow-inner">
+            <!-- Populated by JS -->
+          </div>
+
+          <!-- Active Line Items Summary -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300">Active Permit Line Items (<span id="activeItemsCount">0</span>)</h3>
+              <span class="text-[11px] text-slate-400">Click item to inspect in 3D</span>
+            </div>
+            <div id="activeItemsList" class="space-y-2">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: TRIGGERED SUB-PERMITS (8 DISCIPLINES) -->
+        <div id="tabPanelSubpermits" class="hud-panel hidden space-y-2.5">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300">Triggered Discipline Sub-Permits</h3>
+            <span id="govFrameworkLabel" class="text-[11px] text-sky-300 font-semibold">USBC / VCC</span>
+          </div>
+          <div id="subPermitsList" class="space-y-2">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- TAB 3: DYNAMIC SUBMITTAL CHECKLIST & RDP SEALS -->
+        <div id="tabPanelSubmittals" class="hud-panel hidden space-y-2.5">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300">Required eBUILD Submittals</h3>
+            <span id="rdpSummaryTag" class="text-[11px] font-semibold text-slate-400">RDP Check</span>
+          </div>
+          <div id="submittalsList" class="space-y-2">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- TAB 4: ORDERED INSPECTION MILESTONES (SEQ 10-95) & JSON EXPORT -->
+        <div id="tabPanelInspections" class="hud-panel hidden space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300">Inspection Sequence (Seq 10–95)</h3>
+            <button id="btnExportJson" type="button" class="px-2.5 py-1 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-[11px] font-semibold transition">
+              Export Routing JSON
+            </button>
+          </div>
+          <div id="milestonesList" class="space-y-2">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Footer Support & Code Notice -->
+      <div class="p-2.5 border-t border-slate-800 bg-slate-950/90 text-[11px] text-slate-400 flex items-center justify-between gap-2">
+        <span id="hudSupportContact" class="truncate">Permits Div: (757) 382-6018 • permitsupport@cityofchesapeake.net</span>
+        <span class="text-slate-500 shrink-0">2021 USBC/VCC</span>
+      </div>
     </aside>
   </main>
 
-  <!-- Non-blocking Toast Banner -->
-  <div id="toast-banner" class="hidden fixed bottom-4 right-4 z-50 max-w-sm bg-slate-800 border border-sky-400/40 text-slate-100 text-xs rounded-xl px-4 py-2.5 shadow-2xl"></div>
+  <!-- JSON EXPORT MODAL (No alert/confirm used) -->
+  <div id="jsonModal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full max-h-[82vh] flex flex-col shadow-2xl">
+      <div class="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+        <div>
+          <h3 class="text-sm font-bold text-white">Unified Routing Packet JSON (<span class="font-mono-code text-sky-300">v_chesapeake_application_routing_packet</span>)</h3>
+          <p class="text-[11px] text-slate-400">Ready for eBUILD / AppSheet / PostgreSQL / SQLite materialization</p>
+        </div>
+        <button id="btnCloseJsonModal" type="button" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300">Close</button>
+      </div>
+      <div class="p-4 overflow-y-auto flex-1">
+        <pre id="jsonModalContent" class="font-mono-code text-[11px] text-emerald-300 bg-slate-950 p-3.5 rounded-xl border border-slate-800 overflow-x-auto leading-relaxed"></pre>
+      </div>
+      <div class="px-4 py-3 border-t border-slate-800 flex items-center justify-between">
+        <span id="copyFeedbackMsg" class="text-xs text-emerald-400 font-medium"></span>
+        <button id="btnCopyJson" type="button" class="px-3.5 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-xs font-semibold text-white">
+          Copy JSON to Clipboard
+        </button>
+      </div>
+    </div>
+  </div>
 
-  <script type="module">
-    import * as THREE from 'three';
-    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+  <script>
+    // ============================================================================
+    // 1. HAMPTON ROADS JURISDICTIONS & DISCIPLINE STYLING
+    // ============================================================================
+    const HAMPTON_ROADS_JURISDICTIONS = [
+      {
+        id: '11111111-1111-1111-1111-111111111111',
+        shortName: 'City of Chesapeake (Default)',
+        name: 'City of Chesapeake - Dept. of Development & Permits',
+        portal: 'eBUILD',
+        phone: '(757) 382-6018',
+        email: 'permitsupport@cityofchesapeake.net',
+        zoningDefaultRes: 'R-15',
+        zoningDefaultCom: 'B-2',
+        localRuleNote: 'Chesapeake enforces permits on same-for-same gas/oil replacements, exterior equipment site plans (CHES_EXT_SITE_PLAN), and pre-final Chimney/Vent Certification.'
+      },
+      {
+        id: '11111111-1111-1111-1111-111111111112',
+        shortName: 'City of Virginia Beach',
+        name: 'City of Virginia Beach - Permits & Inspections',
+        portal: 'VB ePermits',
+        phone: '(757) 385-4211',
+        email: 'perminsp@vbgov.com',
+        zoningDefaultRes: 'R-10',
+        zoningDefaultCom: 'B-2',
+        localRuleNote: 'Virginia Beach requires Public Utilities DFU/tap verification on plumbing expansions and coastal wind uplift checks (120+ mph).'
+      },
+      {
+        id: '11111111-1111-1111-1111-111111111113',
+        shortName: 'City of Norfolk',
+        name: 'City of Norfolk - Building Safety',
+        portal: 'NorfolkPermits',
+        phone: '(757) 664-6565',
+        email: 'buildingsafety@norfolk.gov',
+        zoningDefaultRes: 'SF-6',
+        zoningDefaultCom: 'C-C',
+        localRuleNote: 'Norfolk enforces coastal flood/freeboard elevation checks and Historic District COA reviews where applicable.'
+      },
+      {
+        id: '11111111-1111-1111-1111-111111111114',
+        shortName: 'City of Suffolk',
+        name: 'City of Suffolk - Planning & Community Development',
+        portal: 'Suffolk ePermits',
+        phone: '(757) 514-4150',
+        email: 'permits@suffolkva.us',
+        zoningDefaultRes: 'RL',
+        zoningDefaultCom: 'B-2',
+        localRuleNote: 'Suffolk requires VDH well/septic clearances outside public utility service areas alongside CBPA buffer checks.'
+      },
+      {
+        id: '11111111-1111-1111-1111-111111111115',
+        shortName: 'City of Portsmouth',
+        name: 'City of Portsmouth - Permits & Inspections',
+        portal: 'Portsmouth ePermits',
+        phone: '(757) 393-8531',
+        email: 'permits@portsmouthva.gov',
+        zoningDefaultRes: 'UR',
+        zoningDefaultCom: 'GMU',
+        localRuleNote: 'Portsmouth reviews historic district exterior mechanical/structural alterations and floodplain freeboard compliance.'
+      },
+      {
+        id: '11111111-1111-1111-1111-111111111116',
+        shortName: 'City of Hampton',
+        name: 'City of Hampton - Development Services Center',
+        portal: 'Online Permits & Inspections Center',
+        phone: '(757) 727-8311',
+        email: 'dscpermits@hampton.gov',
+        zoningDefaultRes: 'R-11',
+        zoningDefaultCom: 'C-2',
+        localRuleNote: 'Hampton enforces SPI-CBPD Chesapeake Bay Preservation District overlays and online quick-permits for eligible residential swaps.'
+      },
+      {
+        id: '11111111-1111-1111-1111-111111111117',
+        shortName: 'City of Newport News',
+        name: 'City of Newport News - Dept. of Codes Compliance',
+        portal: 'NN ePermits',
+        phone: '(757) 933-2311',
+        email: 'codes@nnva.gov',
+        zoningDefaultRes: 'R4',
+        zoningDefaultCom: 'C1',
+        localRuleNote: 'Newport News applies Hampton Roads Regional Special Inspection Guidelines and watershed/CBPA site reviews.'
+      }
+    ];
 
-    // =========================================================================
-    // 1. CHESAPEAKE / VA USBC / VCC MECHANICAL EQUIPMENT CATALOG & RULE DATA
-    // =========================================================================
     const DISCIPLINE_META = {
-      mechanical: { label: 'Mechanical (IMC / IRC)', hex: '#38bdf8', badge: 'bg-sky-500/15 text-sky-300 border-sky-400/30' },
-      fuel_gas:   { label: 'Fuel Gas (IFGC)',        hex: '#fbbf24', badge: 'bg-amber-500/15 text-amber-300 border-amber-400/30' },
-      electrical: { label: 'Electrical (NFPA 70)',   hex: '#fde047', badge: 'bg-yellow-500/15 text-yellow-200 border-yellow-400/30' },
-      zoning_sign:{ label: 'Zoning / Site (IZC)',    hex: '#34d399', badge: 'bg-emerald-500/15 text-emerald-300 border-emerald-400/30' },
-      fire:       { label: 'Fire (IFC)',             hex: '#f43f5e', badge: 'bg-rose-500/15 text-rose-300 border-rose-400/30' },
-      energy:     { label: 'Energy (IECC)',          hex: '#c084fc', badge: 'bg-purple-500/15 text-purple-300 border-purple-400/30' }
+      building:    { label: 'Building & Structural', colorHex: '#3b82f6', badgeClass: 'bg-blue-500/20 text-blue-300 border-blue-500/40',    ircCode: 'IRC', ibcCode: 'IBC / VCC' },
+      zoning_sign: { label: 'Zoning, Site & Signs',  colorHex: '#a855f7', badgeClass: 'bg-purple-500/20 text-purple-300 border-purple-500/40', ircCode: 'IZC', ibcCode: 'IZC' },
+      mechanical:  { label: 'Mechanical',            colorHex: '#06b6d4', badgeClass: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40',       ircCode: 'IRC', ibcCode: 'IMC' },
+      plumbing:    { label: 'Plumbing',              colorHex: '#14b8a6', badgeClass: 'bg-teal-500/20 text-teal-300 border-teal-500/40',       ircCode: 'IRC', ibcCode: 'IPC' },
+      fuel_gas:    { label: 'Fuel Gas',              colorHex: '#f97316', badgeClass: 'bg-orange-500/20 text-orange-300 border-orange-500/40', ircCode: 'IFGC', ibcCode: 'IFGC' },
+      electrical:  { label: 'Electrical',            colorHex: '#eab308', badgeClass: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40', ircCode: 'IRC', ibcCode: 'NFPA 70' },
+      fire:        { label: 'Fire & Life Safety',    colorHex: '#ef4444', badgeClass: 'bg-red-500/20 text-red-300 border-red-500/40',          ircCode: 'IFC', ibcCode: 'IFC' },
+      energy:      { label: 'Energy Conservation',   colorHex: '#10b981', badgeClass: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40', ircCode: 'IECC', ibcCode: 'IECC' }
     };
 
-    const EQUIPMENT_NODES = [
+    // ============================================================================
+    // 2. UNIFIED CATALOG (ALL 26 BUILDING, MECHANICAL & TRADE SCOPES + 3D COORDS)
+    // ============================================================================
+    const ALL_PERMIT_SCOPES = [
+      // --- 9 BUILDING & STRUCTURAL SCOPES (building_scope_catalog) ---
       {
-        id: 'condenser_rtu',
-        name: 'Rooftop / Exterior Heat Pump Condenser',
-        shortName: 'Heat Pump / RTU',
-        categoryCode: 'hvac_units',
-        primaryDiscipline: 'mechanical',
-        secondaryDiscipline: 'zoning_sign',
-        defaultFuel: 'electric',
-        defaultPlacement: 'exterior_rooftop',
-        eligibleElectricSwap: true,
-        fireTriggerCommercial: false,
-        energyTrigger: true,
-        ventCertBase: false,
-        imcChapters: 'IMC Ch. 3, 9 & 11',
-        ircChapters: 'IRC Ch. 12–23 (Ch. 14 Heating/Cooling)',
-        submittals: [
-          { code: 'MECH_HVAC_SCHED', title: 'HVAC Equipment Schedules & Cut Sheets (SEER2 / HSPF2)' },
-          { code: 'IECC_HVAC_LOAD', title: 'Manual J/S or IECC Heating & Cooling Load Calculations' }
+        id: 'new_build',
+        domain: 'building',
+        primaryDiscipline: 'building',
+        label: 'New Construction (Primary Structure)',
+        shortLabel: 'Foundation & Shell',
+        codeRefs: 'IRC Ch. 3-8 / IBC / VCC Ch. 1 / IECC',
+        defaultAction: 'new_install',
+        defaultLocation: 'exterior_grade',
+        defaultFuel: 'none',
+        pos: [0, 0.35, 0],
+        size: [1.1, 0.5, 1.1],
+        companionDisciplines: ['zoning_sign', 'energy'],
+        requiresRdpCommercial: true,
+        requiresSitePlanOut: true,
+        requiresVentCert: false,
+        defaultSubmittals: [
+          { code: 'BLDG_ARCH_STRUCT', title: 'Architectural, Foundation & Framing Plans' },
+          { code: 'IECC_ENVELOPE', title: 'REScheck / COMcheck Thermal Envelope Compliance' }
         ],
-        milestones: [
-          { seq: 20, name: 'Rough Mechanical, Pad & Refrigerant Line Set Check' },
-          { seq: 45, name: 'HVAC Operational, Defrost & IECC Efficiency Verification' },
-          { seq: 90, name: 'Final Mechanical Inspection (VA USBC / VCC Ch. 1)' }
+        defaultMilestones: [
+          { seq: 10, name: 'Footing, Foundation & Zoning Setback Check' },
+          { seq: 20, name: 'Structural Framing & Sheathing Rough-In' },
+          { seq: 95, name: 'Final Building & Certificate of Occupancy (CO)' }
         ]
       },
       {
-        id: 'furnace_ahu',
-        name: 'Gas Furnace / Air Handler',
-        shortName: 'Furnace / AHU',
-        categoryCode: 'hvac_units',
-        primaryDiscipline: 'mechanical',
-        secondaryDiscipline: 'fuel_gas',
-        defaultFuel: 'natural_gas',
-        defaultPlacement: 'interior_mech',
-        eligibleElectricSwap: true,
-        fireTriggerCommercial: false,
-        energyTrigger: true,
-        ventCertBase: false,
-        imcChapters: 'IMC Ch. 3, 7, 8 & 9',
-        ircChapters: 'IRC Ch. 12–23 (Ch. 14, 17 & 18)',
-        submittals: [
-          { code: 'MECH_FURN_SCHED', title: 'Furnace / AHU Cut Sheets, AFUE & Clearances to Combustibles' },
-          { code: 'IECC_LOAD_CALC', title: 'Heating/Cooling Load & IECC Thermal Efficiency Compliance' }
+        id: 'addition',
+        domain: 'building',
+        primaryDiscipline: 'building',
+        label: 'Structural Building Addition Wing',
+        shortLabel: 'Addition Wing',
+        codeRefs: 'IRC Ch. 3-8 / IBC / IEBC / VCC',
+        defaultAction: 'new_install',
+        defaultLocation: 'exterior_grade',
+        defaultFuel: 'none',
+        pos: [-3.3, 1.35, 0.5],
+        size: [1.4, 1.8, 1.8],
+        companionDisciplines: ['zoning_sign', 'energy'],
+        requiresRdpCommercial: true,
+        requiresSitePlanOut: true,
+        requiresVentCert: false,
+        defaultSubmittals: [
+          { code: 'BLDG_ADDITION_DWG', title: 'Addition Foundation, Tie-In & Structural Framing Plans' },
+          { code: 'IECC_ENVELOPE', title: 'REScheck / COMcheck Envelope Compliance' }
         ],
-        milestones: [
-          { seq: 20, name: 'Rough Mechanical, Condensate & Clearance Inspection' },
-          { seq: 45, name: 'Gas Piping Leak Test & Combustion / Safety Control Check' },
-          { seq: 90, name: 'Final Mechanical Inspection (VA USBC / VCC Ch. 1)' }
+        defaultMilestones: [
+          { seq: 10, name: 'Addition Footing & Setback Verification' },
+          { seq: 20, name: 'Addition Framing & Tie-In Inspection' },
+          { seq: 95, name: 'Final Building Addition Inspection' }
+        ]
+      },
+      {
+        id: 'remodel',
+        domain: 'building',
+        primaryDiscipline: 'building',
+        label: 'Interior / Exterior Structural Remodel',
+        shortLabel: 'Interior Remodel',
+        codeRefs: 'IRC / IEBC (Work-Area / Prescriptive) / VCC',
+        defaultAction: 'alteration',
+        defaultLocation: 'interior',
+        defaultFuel: 'none',
+        pos: [-1.1, 1.3, 0.8],
+        size: [0.9, 1.3, 0.5],
+        companionDisciplines: ['energy'],
+        requiresRdpCommercial: true,
+        requiresSitePlanOut: false,
+        requiresVentCert: false,
+        defaultSubmittals: [
+          { code: 'BLDG_REMODEL_PLAN', title: 'Floor Plan, Partition Layout & Egress Details' }
+        ],
+        defaultMilestones: [
+          { seq: 20, name: 'Interior Framing & Structural Header Check' },
+          { seq: 90, name: 'Final Interior Alteration Inspection' }
+        ]
+      },
+      {
+        id: 'reroof',
+        domain: 'building',
+        primaryDiscipline: 'building',
+        label: 'Roofing & Structural Envelope Assembly',
+        shortLabel: 'Roof Assembly',
+        codeRefs: 'IRC Ch. 8-9 / IBC Ch. 15 / IEBC / Wind 120mph',
+        defaultAction: 'replacement_upgrade',
+        defaultLocation: 'rooftop',
+        defaultFuel: 'none',
+        pos: [0, 3.65, -0.4],
+        size: [1.2, 0.5, 1.2],
+        companionDisciplines: ['energy'],
+        requiresRdpCommercial: true,
+        requiresSitePlanOut: false,
+        requiresVentCert: false,
+        defaultSubmittals: [
+          { code: 'BLDG_ROOF_UPLIFT', title: 'Roof Assembly, Decking & Wind Uplift Specs' }
+        ],
+        defaultMilestones: [
+          { seq: 22, name: 'Roof Sheathing Nailing & Underlayment Check' },
+          { seq: 90, name: 'Final Roofing & Flashing Inspection' }
+        ]
+      },
+      {
+        id: 'deck',
+        domain: 'building',
+        primaryDiscipline: 'building',
+        label: 'Elevated Rear Deck, Ledger & Guardrails',
+        shortLabel: 'Rear Deck',
+        codeRefs: 'IRC App. M / IBC Ch. 16 / IZC',
+        defaultAction: 'new_install',
+        defaultLocation: 'exterior_grade',
+        defaultFuel: 'none',
+        pos: [0.3, 0.75, -3.35],
+        size: [2.2, 0.8, 1.4],
+        companionDisciplines: ['zoning_sign'],
+        requiresRdpCommercial: true,
+        requiresSitePlanOut: true,
+        requiresVentCert: false,
+        defaultSubmittals: [
+          { code: 'BLDG_DECK_DETAIL', title: 'Deck Framing, Ledger Attachment & Guardrail Details' }
+        ],
+        defaultMilestones: [
+          { seq: 10, name: 'Deck Pier Footing & Setback Check' },
+          { seq: 20, name: 'Deck Framing, Ledger & Joist Hanger Check' },
+          { seq: 90, name: 'Final Deck & Guardrail Inspection' }
+        ]
+      },
+      {
+        id: 'pool',
+        domain: 'building',
+        primaryDiscipline: 'building',
+        label: 'Swimming Pool, Spa & Safety Barrier',
+        shortLabel: 'Pool & Barrier',
+        codeRefs: 'ISPSC / IRC / NFPA 70 Art. 680 / IZC',
+        defaultAction: 'new_install',
+        defaultLocation: 'exterior_grade',
+        defaultFuel: 'electric',
+        pos: [3.9, 0.25, -2.5],
+        size: [2.2, 0.4, 1.6],
+        companionDisciplines: ['zoning_sign', 'electrical', 'plumbing'],
+        requiresRdpCommercial: true,
+        requiresSitePlanOut: true,
+        requiresVentCert: false,
+        defaultSubmittals: [
+          { code: 'ISPSC_POOL_BARRIER', title: 'Pool Shell, Barrier Fence/Gate & Anti-Entrapment Specs' }
+        ],
+        defaultMilestones: [
+          { seq: 12, name: 'Pool Excavation, Steel & Equipotential Bonding' },
+          { seq: 88, name: 'Pool Safety Barrier, Alarms & Gates Check' },
+          { seq: 90, name: 'Final Swimming Pool Inspection' }
+        ]
+      },
+      {
+        id: 'fence_wall',
+        domain: 'building',
+        primaryDiscipline: 'building',
+        label: 'Retaining Wall & Perimeter Zoning Fence',
+        shortLabel: 'Retaining Wall',
+        codeRefs: 'IBC Ch. 18 / IRC / IZC Ch. 8',
+        defaultAction: 'new_install',
+        defaultLocation: 'exterior_grade',
+        defaultFuel: 'none',
+        pos: [4.8, 0.65, 1.4],
+        size: [0.45, 1.1, 2.4],
+        companionDisciplines: ['zoning_sign'],
+        requiresRdpCommercial: true,
+        requiresSitePlanOut: true,
+        requiresVentCert: false,
+        defaultSubmittals: [
+          { code: 'BLDG_WALL_SECTION', title: 'Retaining Wall Surcharge / Footing & Fence Height Plan' }
+        ],
+        defaultMilestones: [
+          { seq: 10, name: 'Wall Footing, Drainage & Property Line Check' },
+          { seq: 90, name: 'Final Retaining Wall / Fence Inspection' }
+        ]
+      },
+      {
+        id: 'change_of_occupancy',
+        domain: 'building',
+        primaryDiscipline: 'building',
+        label: 'Change of Occupancy / Use Group Conversion',
+        shortLabel: 'Change of Use',
+        codeRefs: 'IBC / IEBC Ch. 10 / IFC / IZC Ch. 11',
+        defaultAction: 'alteration',
+        defaultLocation: 'interior',
+        defaultFuel: 'none',
+        pos: [0, 2.35, 2.45],
+        size: [1.5, 0.45, 0.3],
+        companionDisciplines: ['zoning_sign', 'fire', 'building'],
+        requiresRdpCommercial: true,
+        requiresSitePlanOut: false,
+        requiresVentCert: false,
+        defaultSubmittals: [
+          { code: 'IEBC_CHANGE_USE', title: 'Code Analysis: Occupancy Load, Egress, Accessibility & Parking' }
+        ],
+        defaultMilestones: [
+          { seq: 55, name: 'Fire & Life-Safety Egress Verification' },
+          { seq: 95, name: 'New Certificate of Occupancy (CO) Final' }
+        ]
+      },
+      {
+        id: 'demolition',
+        domain: 'building',
+        primaryDiscipline: 'building',
+        label: 'Structure Demolition & Utility Capping',
+        shortLabel: 'Demolition Zone',
+        codeRefs: 'VCC Ch. 1 / IBC Ch. 33 / IFC',
+        defaultAction: 'removal',
+        defaultLocation: 'exterior_grade',
+        defaultFuel: 'none',
+        pos: [-4.2, 0.5, -2.8],
+        size: [1.3, 0.9, 1.3],
+        companionDisciplines: ['zoning_sign', 'plumbing', 'electrical', 'fuel_gas'],
+        requiresRdpCommercial: false,
+        requiresSitePlanOut: true,
+        requiresVentCert: false,
+        defaultSubmittals: [
+          { code: 'DEMO_UTILITY_CAP', title: 'Utility Disconnect Letters & Erosion/Site Restoration Plan' }
+        ],
+        defaultMilestones: [
+          { seq: 15, name: 'Sewer/Water Cap & Utility Disconnect Verification' },
+          { seq: 90, name: 'Final Demolition & Grade Stabilization Inspection' }
+        ]
+      },
+
+      // --- 9 MECHANICAL EQUIPMENT SCOPES (mechanical_equipment_catalog) ---
+      {
+        id: 'hvac_units',
+        domain: 'mechanical',
+        primaryDiscipline: 'mechanical',
+        label: 'Heating, Cooling & Heat Pump / RTU',
+        shortLabel: 'Heat Pump / RTU',
+        codeRefs: 'IMC Ch. 3, 9, 11 / IRC Ch. 12-23',
+        defaultAction: 'new_install',
+        defaultLocation: 'exterior_grade',
+        defaultFuel: 'heat_pump',
+        pos: [2.85, 0.65, 1.3],
+        size: [0.85, 0.95, 0.85],
+        companionDisciplines: ['energy', 'fuel_gas', 'electrical', 'zoning_sign'],
+        requiresRdpCommercial: true,
+        requiresSitePlanOut: false,
+        requiresVentCert: false,
+        defaultSubmittals: [
+          { code: 'MECH_HVAC_SCHED', title: 'HVAC Equipment Schedules & Cut Sheets' },
+          { code: 'IECC_HVAC_LOAD', title: 'Manual J/S/D or COMcheck Heating/Cooling Load Calcs' }
+        ],
+        defaultMilestones: [
+          { seq: 20, name: 'Rough Mechanical & Condensate Piping' },
+          { seq: 45, name: 'HVAC Operational & IECC Efficiency Verification' },
+          { seq: 90, name: 'Final Mechanical Inspection' }
         ]
       },
       {
         id: 'ductwork',
-        name: 'Supply / Return Ductwork',
-        shortName: 'Supply/Return Ducts',
-        categoryCode: 'ductwork',
+        domain: 'mechanical',
         primaryDiscipline: 'mechanical',
-        secondaryDiscipline: 'energy',
+        label: 'Ductwork, Air Handler & Distribution',
+        shortLabel: 'Air Handler & Ducts',
+        codeRefs: 'IMC Ch. 6 / IRC Ch. 12-23 / IECC',
+        defaultAction: 'new_install',
+        defaultLocation: 'attic',
         defaultFuel: 'electric',
-        defaultPlacement: 'interior_mech',
-        eligibleElectricSwap: false,
-        fireTriggerCommercial: true,
-        energyTrigger: true,
-        ventCertBase: false,
-        imcChapters: 'IMC Ch. 6 (Duct Systems)',
-        ircChapters: 'IRC Ch. 12–23 (Ch. 16 Duct Systems)',
-        submittals: [
-          { code: 'MECH_DUCT_LAYOUT', title: 'Duct Layout, Manual D Sizing & IECC Insulation/Sealing Specs' },
-          { code: 'MECH_FIRE_DAMPER', title: 'Fire/Smoke Damper & Duct Smoke Detector Locations (Commercial)' }
+        pos: [0.4, 2.75, 0.2],
+        size: [1.5, 0.55, 0.9],
+        companionDisciplines: ['energy', 'fire'],
+        requiresRdpCommercial: true,
+        requiresSitePlanOut: false,
+        requiresVentCert: false,
+        defaultSubmittals: [
+          { code: 'MECH_DUCT_LAYOUT', title: 'Duct Layout, Sizing & IECC Insulation/Sealing Plans' }
         ],
-        milestones: [
-          { seq: 20, name: 'Pre-Concealment Rough-In Duct, Plenum & Damper Inspection' },
-          { seq: 45, name: 'IECC Duct Leakage & Insulation R-Value Verification' },
-          { seq: 90, name: 'Final Air Distribution & Balancing Sign-Off' }
+        defaultMilestones: [
+          { seq: 20, name: 'Rough-In Duct, Plenum & Damper Check' },
+          { seq: 45, name: 'IECC Duct Leakage & Insulation Verification' },
+          { seq: 90, name: 'Final Air Distribution Sign-Off' }
         ]
       },
       {
-        id: 'water_heater',
-        name: 'Tankless / Gas Water Heater',
-        shortName: 'Gas Water Heater',
-        categoryCode: 'boilers_vessels',
-        primaryDiscipline: 'fuel_gas',
-        secondaryDiscipline: 'mechanical',
-        defaultFuel: 'natural_gas',
-        defaultPlacement: 'interior_mech',
-        eligibleElectricSwap: false,
-        fireTriggerCommercial: false,
-        energyTrigger: true,
-        ventCertBase: true,
-        imcChapters: 'IMC Ch. 8 & 10 / IPC Ch. 5',
-        ircChapters: 'IRC Ch. 12–23 & Ch. 28 (Water Heaters)',
-        submittals: [
-          { code: 'MECH_WH_SPEC', title: 'Water Heater Specs, T&P Relief Discharge, Pan & Expansion Tank' },
-          { code: 'IECC_WH_EFF', title: 'Water Heating UEF Efficiency & Pipe Insulation Compliance' }
-        ],
-        milestones: [
-          { seq: 25, name: 'Rough Water Heater Piping, Gas Line & Venting Check' },
-          { seq: 50, name: 'Gas Pressure Test & T&P Relief Safety Check' },
-          { seq: 90, name: 'Final Water Heater / Mechanical Sign-Off' }
-        ]
-      },
-      {
-        id: 'kitchen_hood',
-        name: 'Type I Commercial Kitchen Exhaust Hood',
-        shortName: 'Type I Grease Hood',
-        categoryCode: 'exhaust_specialty',
-        primaryDiscipline: 'fire',
-        secondaryDiscipline: 'mechanical',
-        defaultFuel: 'natural_gas',
-        defaultPlacement: 'interior_mech',
-        eligibleElectricSwap: false,
-        fireTriggerCommercial: true,
-        energyTrigger: true,
-        ventCertBase: true,
-        imcChapters: 'IMC Ch. 5 (Sec. 506–509 Commercial Kitchen Hoods)',
-        ircChapters: 'IRC Ch. 15 (Exhaust — Commercial Hoods Governed by IMC/IFC)',
-        submittals: [
-          { code: 'MECH_TYPE1_HOOD', title: 'Type I Grease Hood, Welded Duct, Shaft & Makeup Air Plans' },
-          { code: 'IFC_UL300_SUPP', title: 'UL 300 Hood Fire Suppression & Fire Alarm Interlock Submittal' }
-        ],
-        milestones: [
-          { seq: 20, name: 'Concealed Grease Duct Weld / Enclosure & Clearance Inspection' },
-          { seq: 45, name: 'Grease Duct Light / Water Leakage & Makeup Air Balance Test' },
-          { seq: 55, name: 'UL 300 Hood Suppression & Shunt-Trip Fire Interlock Test' },
-          { seq: 90, name: 'Final Mechanical & Fire Prevention Sign-Off' }
-        ]
-      },
-      {
-        id: 'boiler_hydronic',
-        name: 'Boiler / Hydronic Loop',
-        shortName: 'Boiler & Hydronic',
-        categoryCode: 'boilers_vessels',
+        id: 'ventilation',
+        domain: 'mechanical',
         primaryDiscipline: 'mechanical',
-        secondaryDiscipline: 'energy',
-        defaultFuel: 'natural_gas',
-        defaultPlacement: 'interior_mech',
-        eligibleElectricSwap: false,
-        fireTriggerCommercial: false,
-        energyTrigger: true,
-        ventCertBase: true,
-        imcChapters: 'IMC Ch. 10 (Boilers) & Ch. 12 (Hydronic Piping)',
-        ircChapters: 'IRC Ch. 12–23 (Ch. 20 Boilers & Ch. 21 Hydronic Piping)',
-        submittals: [
-          { code: 'MECH_BOILER_HYD', title: 'Boiler Schedule, Expansion Tank, LWCO & Hydronic Piping Schematic' },
-          { code: 'IECC_HYD_INSUL', title: 'Hydronic Piping Insulation & Boiler Thermal Efficiency Data' }
+        label: 'Ventilation, ERV/HRV & Makeup Air',
+        shortLabel: 'ERV / Ventilation',
+        codeRefs: 'IMC Ch. 3-5 / IRC Ch. 15 / IECC',
+        defaultAction: 'new_install',
+        defaultLocation: 'attic',
+        defaultFuel: 'electric',
+        pos: [-1.2, 2.75, -0.5],
+        size: [0.75, 0.5, 0.75],
+        companionDisciplines: ['energy', 'electrical'],
+        requiresRdpCommercial: true,
+        requiresSitePlanOut: false,
+        requiresVentCert: false,
+        defaultSubmittals: [
+          { code: 'MECH_VENT_CALC', title: 'Outdoor Air Ventilation Rate & ERV/HRV Schedules' }
         ],
-        milestones: [
-          { seq: 25, name: 'Rough Hydronic Piping, Relief Valve & Expansion Tank Check' },
-          { seq: 50, name: 'Hydrostatic Pressure Test & Low-Water Cutoff Safety Test' },
-          { seq: 90, name: 'Final Boiler & Hydronic Mechanical Inspection' }
+        defaultMilestones: [
+          { seq: 20, name: 'Rough Ventilation Duct & Louver Check' },
+          { seq: 90, name: 'Final Mechanical & Airflow Sign-Off' }
         ]
       },
       {
-        id: 'chimney_vent',
-        name: 'Chimney / Vent Stack & Combustion Air',
-        shortName: 'Chimney & Comb. Air',
-        categoryCode: 'chimneys_vents',
-        primaryDiscipline: 'fuel_gas',
-        secondaryDiscipline: 'zoning_sign',
-        defaultFuel: 'natural_gas',
-        defaultPlacement: 'exterior_rooftop',
-        eligibleElectricSwap: false,
-        fireTriggerCommercial: false,
-        energyTrigger: false,
-        ventCertBase: true,
-        imcChapters: 'IMC Ch. 7 (Combustion Air) & Ch. 8 (Chimneys & Vents)',
-        ircChapters: 'IRC Ch. 12–23 (Ch. 17 Combustion Air & Ch. 18 Chimneys/Vents)',
-        submittals: [
-          { code: 'MECH_VENT_TERM', title: 'Chimney / Flue Sizing & Roof/Wall Termination Clearance Drawing' },
-          { code: 'MECH_COMB_AIR', title: 'Combustion Air Opening / Duct Sizing Calculations (IFGC / IMC)' }
+        id: 'exhaust_specialty',
+        domain: 'mechanical',
+        primaryDiscipline: 'mechanical',
+        label: 'Type I/II Commercial Exhaust Hood & Paint Booth',
+        shortLabel: 'Type I Exhaust Hood',
+        codeRefs: 'IMC Ch. 5 / IFC Ch. 6 & 9 / NFPA 96',
+        defaultAction: 'new_install',
+        defaultLocation: 'interior',
+        defaultFuel: 'electric',
+        pos: [0.9, 1.9, -0.8],
+        size: [1.1, 0.65, 0.85],
+        companionDisciplines: ['fire', 'electrical'],
+        requiresRdpCommercial: true,
+        requiresSitePlanOut: false,
+        requiresVentCert: false,
+        defaultSubmittals: [
+          { code: 'MECH_EXHAUST_DWG', title: 'Commercial Hood, Welded Grease Duct & Makeup Air Plans' },
+          { code: 'IFC_HOOD_SUPP', title: 'UL 300 Hood Fire Suppression Interlock Specs' }
         ],
-        milestones: [
-          { seq: 20, name: 'Pre-Enclosure Chimney / Vent & Combustion Air Rough-In Check' },
-          { seq: 45, name: 'Draft, Flue Gas Spillage & Power Exhauster Operational Test' },
+        defaultMilestones: [
+          { seq: 25, name: 'Concealed Welded Grease Duct & Enclosure Check' },
+          { seq: 50, name: 'Hood Capture, Makeup Air & Fire Suppression Test' },
+          { seq: 90, name: 'Final Mechanical & Fire Inspection' }
+        ]
+      },
+      {
+        id: 'boilers_vessels',
+        domain: 'mechanical',
+        primaryDiscipline: 'mechanical',
+        label: 'Boilers & Hydronic Pressure Vessels',
+        shortLabel: 'Hydronic Boiler',
+        codeRefs: 'IMC Ch. 10 / IRC Ch. 20 / IFGC',
+        defaultAction: 'new_install',
+        defaultLocation: 'basement',
+        defaultFuel: 'natural_gas',
+        pos: [-1.4, 0.65, -0.8],
+        size: [0.7, 0.9, 0.7],
+        companionDisciplines: ['fuel_gas', 'electrical', 'energy'],
+        requiresRdpCommercial: true,
+        requiresSitePlanOut: false,
+        requiresVentCert: true,
+        defaultSubmittals: [
+          { code: 'MECH_BOILER_SPEC', title: 'Boiler ASME Specs, Relief Valve & Expansion Tank Details' }
+        ],
+        defaultMilestones: [
+          { seq: 25, name: 'Rough Boiler Piping & Relief Discharge Check' },
+          { seq: 50, name: 'Hydrostatic Pressure & Safety Cutoff Test' },
+          { seq: 90, name: 'Final Boiler / Mechanical Inspection' }
+        ]
+      },
+      {
+        id: 'refrigeration',
+        domain: 'mechanical',
+        primaryDiscipline: 'mechanical',
+        label: 'Commercial Refrigeration & Walk-In Cooler',
+        shortLabel: 'Walk-In Cooler',
+        codeRefs: 'IMC Ch. 11 / IFC Ch. 6 / NFPA 70',
+        defaultAction: 'new_install',
+        defaultLocation: 'interior',
+        defaultFuel: 'electric',
+        pos: [1.5, 1.15, 0.5],
+        size: [0.95, 1.2, 0.95],
+        companionDisciplines: ['fire', 'electrical'],
+        requiresRdpCommercial: true,
+        requiresSitePlanOut: false,
+        requiresVentCert: false,
+        defaultSubmittals: [
+          { code: 'MECH_REFRIG_SCHEM', title: 'Refrigerant Group Classification, Charge & Relief Plans' }
+        ],
+        defaultMilestones: [
+          { seq: 25, name: 'Rough Refrigerant Piping & Machinery Room Check' },
+          { seq: 50, name: 'Refrigerant Leak & Detector Alarm Test' },
+          { seq: 90, name: 'Final Refrigeration Sign-Off' }
+        ]
+      },
+      {
+        id: 'hydronic_fuel_solar',
+        domain: 'mechanical',
+        primaryDiscipline: 'mechanical',
+        label: 'Solar Thermal, Hydronic Piping & Fuel Oil Tank',
+        shortLabel: 'Solar / Hydronic',
+        codeRefs: 'IMC Ch. 12-14 / IRC Ch. 21-23 / IZC',
+        defaultAction: 'new_install',
+        defaultLocation: 'rooftop',
+        defaultFuel: 'fuel_oil',
+        pos: [1.1, 3.45, 0.8],
+        size: [1.0, 0.35, 0.85],
+        companionDisciplines: ['zoning_sign', 'energy'],
+        requiresRdpCommercial: true,
+        requiresSitePlanOut: false,
+        requiresVentCert: false,
+        defaultSubmittals: [
+          { code: 'MECH_HYDRONIC_SCHEM', title: 'Solar Thermal / Hydronic / Oil Tank Piping & Containment Plans' }
+        ],
+        defaultMilestones: [
+          { seq: 25, name: 'Hydronic / Fuel Piping Pressure Test' },
+          { seq: 90, name: 'Final Mechanical & Site Sign-Off' }
+        ]
+      },
+      {
+        id: 'fireplaces_appliances',
+        domain: 'mechanical',
+        primaryDiscipline: 'mechanical',
+        label: 'Fireplaces, Gas Logs & Woodstoves',
+        shortLabel: 'Fireplace / Hearth',
+        codeRefs: 'IMC Ch. 9 / IRC Ch. 10 / IFGC Ch. 6',
+        defaultAction: 'new_install',
+        defaultLocation: 'interior',
+        defaultFuel: 'natural_gas',
+        pos: [-1.85, 1.0, 0.4],
+        size: [0.75, 1.1, 0.75],
+        companionDisciplines: ['fuel_gas', 'fire', 'building'],
+        requiresRdpCommercial: true,
+        requiresSitePlanOut: false,
+        requiresVentCert: true,
+        defaultSubmittals: [
+          { code: 'MECH_APPL_LISTING', title: 'UL Appliance Listing, Hearth & Clearance-to-Combustibles' }
+        ],
+        defaultMilestones: [
+          { seq: 20, name: 'Hearth Framing & Clearance-to-Combustibles Check' },
+          { seq: 90, name: 'Final Fireplace / Appliance Sign-Off' }
+        ]
+      },
+      {
+        id: 'chimneys_vents',
+        domain: 'mechanical',
+        primaryDiscipline: 'mechanical',
+        label: 'Chimney, Flue Vent Stack & Combustion Air',
+        shortLabel: 'Chimney / Vent Stack',
+        codeRefs: 'IMC Ch. 7-8 / IRC Ch. 10, 17-18 / IFGC Ch. 5',
+        defaultAction: 'new_install',
+        defaultLocation: 'rooftop',
+        defaultFuel: 'natural_gas',
+        pos: [-1.85, 3.3, 0.4],
+        size: [0.65, 1.75, 0.65],
+        companionDisciplines: ['fuel_gas'],
+        requiresRdpCommercial: true,
+        requiresSitePlanOut: false,
+        requiresVentCert: true,
+        defaultSubmittals: [
+          { code: 'MECH_VENT_TERM', title: 'Chimney/Vent Sizing, Termination & Combustion Air Calcs' }
+        ],
+        defaultMilestones: [
+          { seq: 20, name: 'Chimney/Vent & Combustion Air Rough-In Check' },
           { seq: 90, name: 'Final Venting & Combustion Air Sign-Off' }
+        ]
+      },
+
+      // --- 8 PLUMBING, FUEL GAS & ELECTRICAL TRADE SCOPES (trade_scope_catalog) ---
+      {
+        id: 'PLUMB_WATER_BACKFLOW',
+        domain: 'trade',
+        primaryDiscipline: 'plumbing',
+        label: 'Water Service, Distribution & RPZ Backflow',
+        shortLabel: 'Water & Backflow',
+        codeRefs: 'IPC Ch. 3, 6 / IRC Ch. 25, 29',
+        defaultAction: 'new_install',
+        defaultLocation: 'underground',
+        defaultFuel: 'none',
+        pos: [2.6, 0.25, 2.6],
+        size: [0.7, 0.45, 0.7],
+        companionDisciplines: ['zoning_sign'],
+        requiresRdpCommercial: true,
+        requiresSitePlanOut: true,
+        requiresVentCert: false,
+        defaultSubmittals: [
+          { code: 'PLUMB_WATER_RISER', title: 'Water Sizing Isometric & RPZ Backflow Preventer Details' }
+        ],
+        defaultMilestones: [
+          { seq: 15, name: 'Underground Water Service & Backflow Check' },
+          { seq: 25, name: 'Rough Water Piping Hydrostatic Pressure Test' },
+          { seq: 90, name: 'Final Water Supply & Backflow Inspection' }
+        ]
+      },
+      {
+        id: 'PLUMB_WATER_HEATERS',
+        domain: 'trade',
+        primaryDiscipline: 'plumbing',
+        label: 'Water Heater (Tankless / Tank / Heat Pump)',
+        shortLabel: 'Water Heater',
+        codeRefs: 'IPC Ch. 5 / IRC Ch. 28 / IFGC Ch. 6 / IECC',
+        defaultAction: 'new_install',
+        defaultLocation: 'interior',
+        defaultFuel: 'natural_gas',
+        pos: [-0.6, 0.85, -1.2],
+        size: [0.65, 1.15, 0.65],
+        companionDisciplines: ['fuel_gas', 'mechanical', 'electrical', 'energy'],
+        requiresRdpCommercial: true,
+        requiresSitePlanOut: false,
+        requiresVentCert: false,
+        defaultSubmittals: [
+          { code: 'PLUMB_WH_SPEC', title: 'Water Heater Specs, T&P Relief, Pan/Drain & Expansion Tank' }
+        ],
+        defaultMilestones: [
+          { seq: 25, name: 'Rough Water Heater Piping, T&P & Vent Check' },
+          { seq: 90, name: 'Final Water Heater & Safety Relief Inspection' }
+        ]
+      },
+      {
+        id: 'PLUMB_FIXTURES_DWV',
+        domain: 'trade',
+        primaryDiscipline: 'plumbing',
+        label: 'Plumbing Fixtures, Sanitary DWV & Sewer',
+        shortLabel: 'Fixtures & DWV Stack',
+        codeRefs: 'IPC Ch. 4, 7, 9 / IRC Ch. 27, 30-31',
+        defaultAction: 'new_install',
+        defaultLocation: 'interior',
+        defaultFuel: 'none',
+        pos: [0.2, 1.5, -1.3],
+        size: [0.55, 2.2, 0.55],
+        companionDisciplines: ['building', 'zoning_sign'],
+        requiresRdpCommercial: true,
+        requiresSitePlanOut: true,
+        requiresVentCert: false,
+        defaultSubmittals: [
+          { code: 'PLUMB_DWV_RISER', title: 'Sanitary DWV Riser, Vent Stack & Fixture / ADA Schedule' }
+        ],
+        defaultMilestones: [
+          { seq: 15, name: 'Underground Slab DWV & Building Sewer Test' },
+          { seq: 25, name: 'Rough DWV & Vent Stack Water/Air Test' },
+          { seq: 90, name: 'Final Plumbing Fixtures & Flow Test' }
+        ]
+      },
+      {
+        id: 'PLUMB_INTERCEPTORS_APPL',
+        domain: 'trade',
+        primaryDiscipline: 'plumbing',
+        label: 'Grease/Oil Interceptor, Traps & Sump Pumps',
+        shortLabel: 'Grease Interceptor',
+        codeRefs: 'IPC Ch. 8, 10-11 / IFC / IZC',
+        defaultAction: 'new_install',
+        defaultLocation: 'underground',
+        defaultFuel: 'none',
+        pos: [2.7, 0.25, -1.2],
+        size: [0.95, 0.45, 0.85],
+        companionDisciplines: ['mechanical', 'electrical', 'zoning_sign'],
+        requiresRdpCommercial: true,
+        requiresSitePlanOut: true,
+        requiresVentCert: false,
+        defaultSubmittals: [
+          { code: 'PLUMB_INTERCEPTOR_SPEC', title: 'Grease/Oil Interceptor Sizing & Special Waste Details' }
+        ],
+        defaultMilestones: [
+          { seq: 15, name: 'Interceptor Excavation & Drainage Rough-In' },
+          { seq: 90, name: 'Final Interceptor & Pump Inspection' }
+        ]
+      },
+      {
+        id: 'GAS_PIPING_APPL',
+        domain: 'trade',
+        primaryDiscipline: 'fuel_gas',
+        label: 'Fuel Gas Meter, Piping, LP Tank & Red-Tag',
+        shortLabel: 'Gas Meter / LP Tank',
+        codeRefs: 'IFGC Ch. 1-8 / IRC Ch. 24 / NFPA 58',
+        defaultAction: 'new_install',
+        defaultLocation: 'exterior_grade',
+        defaultFuel: 'natural_gas',
+        pos: [-2.75, 0.65, 1.5],
+        size: [0.7, 0.9, 0.7],
+        companionDisciplines: ['mechanical', 'zoning_sign'],
+        requiresRdpCommercial: true,
+        requiresSitePlanOut: true,
+        requiresVentCert: true,
+        defaultSubmittals: [
+          { code: 'GAS_ISO_CALC', title: 'Gas Piping Isometric, BTU Load & Pressure Sizing (IFGC)' }
+        ],
+        defaultMilestones: [
+          { seq: 25, name: 'Gas Piping Pressure / Manometer Leak Test (IFGC Ch. 4)' },
+          { seq: 90, name: 'Final Fuel Gas & Utility Release Inspection' }
+        ]
+      },
+      {
+        id: 'ELEC_SVC_PANELS',
+        domain: 'trade',
+        primaryDiscipline: 'electrical',
+        label: 'Electrical Service Entrance, Meter & Main Panel',
+        shortLabel: '200A/400A Service Panel',
+        codeRefs: 'NFPA 70 Art. 210-240, 408 / IRC Ch. 36',
+        defaultAction: 'new_install',
+        defaultLocation: 'exterior_grade',
+        defaultFuel: 'electric',
+        pos: [2.75, 1.15, 0.1],
+        size: [0.45, 1.05, 0.7],
+        companionDisciplines: ['zoning_sign', 'building'],
+        requiresRdpCommercial: true,
+        requiresSitePlanOut: true,
+        requiresVentCert: false,
+        defaultSubmittals: [
+          { code: 'ELEC_LOAD_RISER', title: 'NEC Load Calculations, One-Line Riser & Grounding Details' }
+        ],
+        defaultMilestones: [
+          { seq: 15, name: 'Service Entrance, Grounding Electrode & Utility Coordination' },
+          { seq: 25, name: 'Rough Feeder & Panelboard Inspection' },
+          { seq: 90, name: 'Final Electrical Service & Meter Release' }
+        ]
+      },
+      {
+        id: 'ELEC_LIFE_SAFETY_CIRCUITS',
+        domain: 'trade',
+        primaryDiscipline: 'electrical',
+        label: 'Branch Circuits, GFCI/AFCI, Lighting & Fire Alarm',
+        shortLabel: 'Branch & Life-Safety',
+        codeRefs: 'NFPA 70 Art. 210, 410, 760 / IRC Ch. 37-40',
+        defaultAction: 'new_install',
+        defaultLocation: 'interior',
+        defaultFuel: 'electric',
+        pos: [0.9, 2.2, 1.1],
+        size: [0.6, 0.45, 0.6],
+        companionDisciplines: ['energy', 'fire'],
+        requiresRdpCommercial: true,
+        requiresSitePlanOut: false,
+        requiresVentCert: false,
+        defaultSubmittals: [
+          { code: 'ELEC_CIRCUIT_SCHED', title: 'Branch Circuit, GFCI/AFCI & Smoke/CO/Alarm Layout' }
+        ],
+        defaultMilestones: [
+          { seq: 25, name: 'Rough Branch Wiring, Boxes & Smoke/CO/Alarm Check' },
+          { seq: 90, name: 'Final Electrical Branch & Lighting Inspection' }
+        ]
+      },
+      {
+        id: 'ELEC_DER_GEN_EV_POOL',
+        domain: 'trade',
+        primaryDiscipline: 'electrical',
+        label: 'Standby Generator, Solar PV, ESS Battery & EVSE',
+        shortLabel: 'Generator / Solar / EV',
+        codeRefs: 'NFPA 70 Art. 445, 625, 680, 702, 705, 706 / IFC Ch. 12',
+        defaultAction: 'new_install',
+        defaultLocation: 'exterior_grade',
+        defaultFuel: 'propane',
+        pos: [-3.1, 0.6, -1.3],
+        size: [1.05, 0.75, 0.7],
+        companionDisciplines: ['zoning_sign', 'fuel_gas', 'fire'],
+        requiresRdpCommercial: true,
+        requiresSitePlanOut: true,
+        requiresVentCert: false,
+        defaultSubmittals: [
+          { code: 'ELEC_DER_ONE_LINE', title: 'Generator/DER One-Line Diagram, Transfer Switch & Clearances' }
+        ],
+        defaultMilestones: [
+          { seq: 15, name: 'Pad, Trench & Grounding/Bonding Rough-In' },
+          { seq: 50, name: 'ATS Transfer Switch & Load Bank Operational Test' },
+          { seq: 90, name: 'Final Standby Generator / DER Inspection' }
         ]
       }
     ];
 
-    // =========================================================================
-    // 2. APPLICATION STATE
-    // =========================================================================
-    const state = {
-      buildingType: 'residential', // 'residential' | 'commercial'
-      selectedEquipId: 'condenser_rtu',
-      actionType: 'new_install', // 'new_install' | 'replacement_like_for_like' | 'alteration'
-      fuelSource: 'electric', // 'electric' | 'natural_gas'
-      placement: 'exterior_rooftop', // 'exterior_rooftop' | 'interior_mech'
-      viewMode: 'cutaway', // 'cutaway' | 'solid' | 'discipline'
-      showLabels: true
-    };
+    const CATALOG_BY_ID = new Map(ALL_PERMIT_SCOPES.map(item => [item.id, item]));
 
-    const toastEl = document.getElementById('toast-banner');
-    function showToast(msg) {
-      toastEl.textContent = msg;
-      toastEl.classList.remove('hidden');
-      clearTimeout(showToast._timer);
-      showToast._timer = setTimeout(() => toastEl.classList.add('hidden'), 2800);
-    }
-
-    // =========================================================================
-    // 3. CHESAPEAKE / VA USBC / VCC PERMIT RULES EVALUATOR
-    // =========================================================================
-    function evaluateChesapeakeRules() {
-      const eq = EQUIPMENT_NODES.find((e) => e.id === state.selectedEquipId) || EQUIPMENT_NODES[0];
-      const isCommercial = state.buildingType === 'commercial';
-      const isExteriorOrRoof = state.placement === 'exterior_rooftop';
-      const isGas = state.fuelSource === 'natural_gas';
-      const isLikeForLike = state.actionType === 'replacement_like_for_like';
-
-      // Chesapeake Q1 Rule:
-      // Same-for-same gas/oil requires permit; eligible interior electric HVAC swap may qualify for exemption.
-      let permitRequired = true;
-      let statusBadge = 'PERMIT REQUIRED';
-      let statusSummary = 'Requires a Mechanical Permit filed via City of Chesapeake eBUILD under Virginia USBC / VCC.';
-      let isExempt = false;
-
-      if (isLikeForLike) {
-        if (isGas) {
-          permitRequired = true;
-          statusBadge = 'PERMIT REQUIRED (Chesapeake Gas Swap Rule)';
-          statusSummary = 'Chesapeake Q1 Rule: Same-for-same natural gas or propane appliance/equipment replacement requires a mechanical/gas permit.';
-        } else if (!isGas && eq.eligibleElectricSwap && !isExteriorOrRoof && !isCommercial) {
-          permitRequired = false;
-          isExempt = true;
-          statusBadge = 'ELIGIBLE EXEMPTION (Verify Local Scope)';
-          statusSummary = 'Chesapeake Q1 Rule: Eligible interior residential like-for-like electric HVAC replacement (verify no duct, circuit, or exterior pad changes).';
-        }
+    // ============================================================================
+    // 3. PRESET SCENARIOS (ALL BUILDING & TRADE COMBINATIONS)
+    // ============================================================================
+    const PRESET_SCENARIOS = [
+      {
+        id: 'new_house_full',
+        label: 'New Single-Family House (Full MEP + Site)',
+        codePath: 'IRC',
+        items: [
+          { id: 'new_build', action: 'new_install', location: 'exterior_grade', fuel: 'none' },
+          { id: 'hvac_units', action: 'new_install', location: 'exterior_grade', fuel: 'heat_pump' },
+          { id: 'ductwork', action: 'new_install', location: 'attic', fuel: 'electric' },
+          { id: 'PLUMB_WATER_BACKFLOW', action: 'new_install', location: 'underground', fuel: 'none' },
+          { id: 'PLUMB_WATER_HEATERS', action: 'new_install', location: 'interior', fuel: 'natural_gas' },
+          { id: 'PLUMB_FIXTURES_DWV', action: 'new_install', location: 'interior', fuel: 'none' },
+          { id: 'GAS_PIPING_APPL', action: 'new_install', location: 'exterior_grade', fuel: 'natural_gas' },
+          { id: 'ELEC_SVC_PANELS', action: 'new_install', location: 'exterior_grade', fuel: 'electric' },
+          { id: 'ELEC_LIFE_SAFETY_CIRCUITS', action: 'new_install', location: 'interior', fuel: 'electric' }
+        ]
+      },
+      {
+        id: 'addition_deck',
+        label: 'Residential Addition & Deck',
+        codePath: 'IRC',
+        items: [
+          { id: 'addition', action: 'new_install', location: 'exterior_grade', fuel: 'none' },
+          { id: 'deck', action: 'new_install', location: 'exterior_grade', fuel: 'none' },
+          { id: 'ductwork', action: 'alteration', location: 'attic', fuel: 'electric' },
+          { id: 'ELEC_LIFE_SAFETY_CIRCUITS', action: 'new_install', location: 'interior', fuel: 'electric' }
+        ]
+      },
+      {
+        id: 'pool_wall_gen',
+        label: 'Pool, Retaining Wall & Exterior Generator/LP',
+        codePath: 'IRC',
+        items: [
+          { id: 'pool', action: 'new_install', location: 'exterior_grade', fuel: 'electric' },
+          { id: 'fence_wall', action: 'new_install', location: 'exterior_grade', fuel: 'none' },
+          { id: 'ELEC_DER_GEN_EV_POOL', action: 'new_install', location: 'exterior_grade', fuel: 'propane' },
+          { id: 'GAS_PIPING_APPL', action: 'new_install', location: 'exterior_grade', fuel: 'propane' }
+        ]
+      },
+      {
+        id: 'commercial_kitchen',
+        label: 'Commercial Kitchen & Hood Tenant Upfit',
+        codePath: 'IBC',
+        items: [
+          { id: 'remodel', action: 'alteration', location: 'interior', fuel: 'none' },
+          { id: 'change_of_occupancy', action: 'alteration', location: 'interior', fuel: 'none' },
+          { id: 'exhaust_specialty', action: 'new_install', location: 'interior', fuel: 'electric' },
+          { id: 'hvac_units', action: 'new_install', location: 'rooftop', fuel: 'natural_gas' },
+          { id: 'PLUMB_INTERCEPTORS_APPL', action: 'new_install', location: 'underground', fuel: 'none' },
+          { id: 'GAS_PIPING_APPL', action: 'new_install', location: 'exterior_grade', fuel: 'natural_gas' },
+          { id: 'ELEC_SVC_PANELS', action: 'replacement_upgrade', location: 'exterior_grade', fuel: 'electric' }
+        ]
+      },
+      {
+        id: 'elec_swap_exempt',
+        label: 'Like-for-Like Electric HVAC Swap (Exempt Check)',
+        codePath: 'IRC',
+        items: [
+          { id: 'hvac_units', action: 'replacement_like_for_like', location: 'interior', fuel: 'electric' }
+        ]
+      },
+      {
+        id: 'gas_swap_chesapeake',
+        label: 'Gas Furnace / Tankless Swap (Chesapeake Fuel Rule)',
+        codePath: 'IRC',
+        items: [
+          { id: 'hvac_units', action: 'replacement_like_for_like', location: 'attic', fuel: 'natural_gas' },
+          { id: 'PLUMB_WATER_HEATERS', action: 'replacement_like_for_like', location: 'interior', fuel: 'natural_gas' },
+          { id: 'chimneys_vents', action: 'alteration', location: 'rooftop', fuel: 'natural_gas' }
+        ]
       }
+    ];
 
-      // Commercial Kitchen Type I Hood always governed by IMC / IFC
-      const forceCommercialCode = isCommercial || eq.id === 'kitchen_hood';
-      const governingCode = forceCommercialCode ? 'IMC + IBC / VA USBC' : 'IRC Ch. 12–23 + VA USBC';
-      const governingChapters = forceCommercialCode ? eq.imcChapters : eq.ircChapters;
+    // ============================================================================
+    // 4. SYNTHETIC NON-PII DATA GENERATOR
+    // ============================================================================
+    const SYNTHETIC_STREETS = [
+      'Synthetic Oak Way', 'Placeholder Pines Blvd', 'Sample Harbor Ct',
+      'Demo Creek Rd', 'Test Cedar Pkwy', 'Mock Riverfront Dr', 'Model Meadow Ln'
+    ];
+    const SYNTHETIC_ENTITIES = [
+      'Synthetic Builder LLC', 'Demo Regional Contractors Inc.', 'Sample Mechanical & Trades Corp.',
+      'Test Tidewater Construction Group', 'Placeholder Home Improvements LLC'
+    ];
 
-      // RDP Seal Required Flag (USBC / VCC Ch. 1)
-      const rdpSealRequired = permitRequired && forceCommercialCode;
-
-      // Exterior Site Plan Gate (CHES_EXT_SITE_PLAN / IZC Ch. 8)
-      const sitePlanRequired = permitRequired && isExteriorOrRoof;
-
-      // Companion Sub-Permits
-      const subPermits = [];
-      if (permitRequired) {
-        subPermits.push('mechanical');
-        if (isGas) subPermits.push('fuel_gas');
-        subPermits.push('electrical');
-        if (sitePlanRequired) subPermits.push('zoning_sign');
-        if (eq.fireTriggerCommercial && forceCommercialCode) subPermits.push('fire');
-        if (eq.energyTrigger) subPermits.push('energy');
-      }
-
-      // Submittal Checklist
-      const submittals = [];
-      if (permitRequired) {
-        if (sitePlanRequired) {
-          submittals.push({
-            code: 'CHES_EXT_SITE_PLAN',
-            title: 'Exterior / Rooftop Mechanical Site Plan (IZC Ch. 8 Setbacks, Screening & CBPA Check)',
-            highlight: true
-          });
-        }
-        if (rdpSealRequired) {
-          submittals.push({
-            code: 'VCC_RDP_SEAL',
-            title: 'Virginia Registered Design Professional (RDP) Seal & Signature (USBC / VCC Ch. 1)',
-            highlight: true
-          });
-        }
-        eq.submittals.forEach((s) => submittals.push({ ...s, highlight: false }));
-      }
-
-      // Inspection Milestones + Chesapeake Chimney / Vent Certification Gate
-      const milestones = [];
-      const ventCertRequired = permitRequired && (eq.ventCertBase || isGas);
-      if (permitRequired) {
-        eq.milestones.forEach((m) => {
-          if (m.seq === 90 && ventCertRequired) {
-            milestones.push({
-              seq: 85,
-              name: 'Chesapeake Chimney / Vent Certification Gate (Mandatory Pre-Final Hold)',
-              isVentGate: true
-            });
-          }
-          milestones.push({ ...m, isVentGate: false });
-        });
-      }
+    function generateSyntheticAppMeta(jurisdiction) {
+      const randNum = Math.floor(1000 + Math.random() * 8999);
+      const streetNum = Math.floor(100 + Math.random() * 8900);
+      const street = SYNTHETIC_STREETS[Math.floor(Math.random() * SYNTHETIC_STREETS.length)];
+      const entity = SYNTHETIC_ENTITIES[Math.floor(Math.random() * SYNTHETIC_ENTITIES.length)];
+      const cityLabel = jurisdiction.shortName.replace('City of ', '').replace(' (Default)', '');
+      const cityCode = cityLabel.slice(0, 4).toUpperCase().replace(/\s/g, '');
+      const parcel = '0' + Math.floor(100000000000 + Math.random() * 899999999999);
 
       return {
-        eq,
-        permitRequired,
-        isExempt,
-        statusBadge,
-        statusSummary,
-        governingCode,
-        governingChapters,
-        rdpSealRequired,
-        sitePlanRequired,
-        ventCertRequired,
-        subPermits,
-        submittals,
-        milestones
+        applicationNumber: `PRM-2026-${cityCode}-SYN-${randNum}`,
+        propertyAddress: `${streetNum} ${street}, ${cityLabel}, VA 23320`,
+        parcelId: parcel,
+        applicantName: entity,
+        contractorLicense: `VA-CLASS-A-SYN-${Math.floor(10000 + Math.random() * 89999)}`
       };
     }
 
-    // =========================================================================
-    // 4. HUD & UI RENDERING
-    // =========================================================================
-    function renderEquipmentChips() {
-      const container = document.getElementById('equipment-chips');
-      container.innerHTML = EQUIPMENT_NODES.map((eq) => {
-        const selected = eq.id === state.selectedEquipId;
-        const discColor = DISCIPLINE_META[eq.primaryDiscipline].hex;
-        return `
-          <button
-            data-equip="${eq.id}"
-            class="equip-chip text-left px-2.5 py-2 rounded-lg border text-xs transition flex items-center gap-2 ${
-              selected
-                ? 'bg-sky-500/20 border-sky-400 text-white font-semibold shadow-sm'
-                : 'bg-slate-950/70 border-slate-800 text-slate-300 hover:border-slate-700 hover:bg-slate-800/80'
-            }"
-          >
-            <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:${discColor}"></span>
-            <span class="truncate">${eq.shortName}</span>
-          </button>
-        `;
-      }).join('');
-
-      document.querySelectorAll('.equip-chip').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          selectEquipment(btn.dataset.equip, true);
-        });
-      });
-    }
-
-    function renderHUD() {
-      const res = evaluateChesapeakeRules();
-      const hud = document.getElementById('hud-output');
-
-      const statusBoxClass = res.isExempt
-        ? 'bg-emerald-500/12 border-emerald-400/40 text-emerald-200'
-        : 'bg-rose-500/12 border-rose-400/40 text-rose-100';
-
-      const statusPillClass = res.isExempt
-        ? 'bg-emerald-500 text-slate-950'
-        : 'bg-rose-500 text-white';
-
-      hud.innerHTML = `
-        <!-- Selected Equipment Header & Permit Status -->
-        <div class="rounded-xl border p-3.5 ${statusBoxClass}">
-          <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5">
-            <span class="text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full ${statusPillClass}">
-              ${res.statusBadge}
-            </span>
-            <span class="text-[11px] font-mono text-slate-300">${res.eq.categoryCode}</span>
-          </div>
-          <h3 class="text-base font-bold text-white">${res.eq.name}</h3>
-          <p class="text-xs mt-1 leading-relaxed opacity-95">${res.statusSummary}</p>
-        </div>
-
-        <!-- Core Regulatory Flags Grid -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
-          <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3">
-            <div class="text-[11px] text-slate-400 font-medium">Governing Code &amp; Chapters</div>
-            <div class="font-bold text-sky-300 mt-0.5">${res.governingCode}</div>
-            <div class="text-[11px] text-slate-300 mt-0.5">${res.governingChapters}</div>
-          </div>
-
-          <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3">
-            <div class="text-[11px] text-slate-400 font-medium">RDP Seal (USBC / VCC Ch. 1)</div>
-            <div class="font-bold mt-0.5 ${res.rdpSealRequired ? 'text-amber-300' : 'text-slate-300'}">
-              ${res.rdpSealRequired ? 'REQUIRED — Seal & Sign Plans' : 'Not Required (Standard Path)'}
-            </div>
-            <div class="text-[11px] text-slate-400 mt-0.5">
-              ${res.rdpSealRequired ? 'Commercial / IMC / Life-Safety Threshold' : 'Prescriptive IRC Residential Scope'}
-            </div>
-          </div>
-
-          <div class="sm:col-span-2 bg-slate-950/80 border ${
-            res.sitePlanRequired ? 'border-emerald-500/40' : 'border-slate-800'
-          } rounded-xl p-3 flex items-center justify-between gap-3">
-            <div>
-              <div class="text-[11px] text-slate-400 font-medium">Exterior Site Plan Gate (CHES_EXT_SITE_PLAN / IZC Ch. 8)</div>
-              <div class="font-bold mt-0.5 ${res.sitePlanRequired ? 'text-emerald-300' : 'text-slate-300'}">
-                ${
-                  res.sitePlanRequired
-                    ? 'TRIGGERED — Exterior / Rooftop Setbacks, Screening & CBPA Check'
-                    : 'Not Triggered (Interior / Enclosed Equipment Placement)'
-                }
-              </div>
-            </div>
-            <span class="text-[11px] font-bold px-2.5 py-1 rounded-lg shrink-0 ${
-              res.sitePlanRequired
-                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/40'
-                : 'bg-slate-800 text-slate-400'
-            }">
-              ${res.sitePlanRequired ? 'GATE ACTIVE' : 'BYPASSED'}
-            </span>
-          </div>
-        </div>
-
-        <!-- Companion Sub-Permits -->
-        <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5">
-          <div class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
-            Triggered Primary &amp; Companion Sub-Permits
-          </div>
-          <div class="flex flex-wrap gap-1.5">
-            ${
-              res.subPermits.length > 0
-                ? res.subPermits
-                    .map((code) => {
-                      const meta = DISCIPLINE_META[code];
-                      return `<span class="text-xs font-semibold px-2.5 py-1 rounded-lg border ${meta.badge}">${meta.label}</span>`;
-                    })
-                    .join('')
-                : `<span class="text-xs text-emerald-300 font-medium">No sub-permits required under Chesapeake like-for-like electric exemption.</span>`
-            }
-          </div>
-        </div>
-
-        <!-- Required Submittal Checklist -->
-        <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5">
-          <div class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
-            Required Submittal Checklist (eBUILD Upload)
-          </div>
-          ${
-            res.submittals.length > 0
-              ? `<ul class="space-y-2 text-xs">
-                  ${res.submittals
-                    .map(
-                      (s) => `
-                    <li class="p-2.5 rounded-lg border ${
-                      s.highlight
-                        ? 'bg-sky-500/10 border-sky-400/40 text-sky-100'
-                        : 'bg-slate-900/90 border-slate-800 text-slate-200'
-                    }">
-                      <div class="font-mono text-[10px] text-slate-400">${s.code}</div>
-                      <div class="font-medium mt-0.5">${s.title}</div>
-                    </li>`
-                    )
-                    .join('')}
-                </ul>`
-              : `<p class="text-xs text-slate-400">No submittal package required when exempt scope is verified.</p>`
-          }
-        </div>
-
-        <!-- Ordered Inspection Milestones -->
-        <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5">
-          <div class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
-            Ordered Inspection Milestones &amp; Certification Gates
-          </div>
-          ${
-            res.milestones.length > 0
-              ? `<ol class="space-y-2 text-xs">
-                  ${res.milestones
-                    .map(
-                      (m, idx) => `
-                    <li class="p-2.5 rounded-lg border flex items-start gap-2.5 ${
-                      m.isVentGate
-                        ? 'bg-amber-500/15 border-amber-400/50 text-amber-100'
-                        : 'bg-slate-900/90 border-slate-800 text-slate-200'
-                    }">
-                      <span class="px-2 py-0.5 rounded font-bold text-[10px] shrink-0 ${
-                        m.isVentGate ? 'bg-amber-400 text-slate-950' : 'bg-slate-800 text-sky-300'
-                      }">
-                        #${idx + 1}
-                      </span>
-                      <div>
-                        <div class="font-semibold">${m.name}</div>
-                        ${
-                          m.isVentGate
-                            ? `<div class="text-[11px] text-amber-300 mt-0.5">Blocks Final Inspection until Chimney/Vent Certification is filed with Mechanical Division.</div>`
-                            : ''
-                        }
-                      </div>
-                    </li>`
-                    )
-                    .join('')}
-                </ol>`
-              : `<p class="text-xs text-slate-400">No field inspections scheduled for exempt swap.</p>`
-          }
-        </div>
-      `;
-    }
-
-    function syncParamControlsFromState() {
-      document.getElementById('param-building').value = state.buildingType;
-      document.getElementById('param-action').value = state.actionType;
-      document.getElementById('param-fuel').value = state.fuelSource;
-      document.getElementById('param-placement').value = state.placement;
-
-      const resBtn = document.getElementById('btn-bldg-res');
-      const comBtn = document.getElementById('btn-bldg-com');
-      const badge = document.getElementById('active-bldg-badge');
-      if (state.buildingType === 'residential') {
-        resBtn.className = 'bldg-btn px-3 py-1.5 rounded-md font-semibold bg-sky-500 text-slate-950 transition';
-        comBtn.className = 'bldg-btn px-3 py-1.5 rounded-md font-medium text-slate-300 hover:text-white transition';
-        badge.textContent = 'Active: Residential IRC Dwelling';
-      } else {
-        comBtn.className = 'bldg-btn px-3 py-1.5 rounded-md font-semibold bg-sky-500 text-slate-950 transition';
-        resBtn.className = 'bldg-btn px-3 py-1.5 rounded-md font-medium text-slate-300 hover:text-white transition';
-        badge.textContent = 'Active: Commercial IBC / IMC Building';
-      }
-    }
-
-    function selectEquipment(equipId, applyDefaults = true) {
-      state.selectedEquipId = equipId;
-      const eq = EQUIPMENT_NODES.find((e) => e.id === equipId);
-      if (eq && applyDefaults) {
-        state.fuelSource = eq.defaultFuel;
-        state.placement = eq.defaultPlacement;
-        if (eq.id === 'kitchen_hood' && state.buildingType === 'residential') {
-          state.buildingType = 'commercial';
-          rebuildSceneGeometry();
-        }
-      }
-      syncParamControlsFromState();
-      renderEquipmentChips();
-      renderHUD();
-      updateEquipmentHighlights();
-      if (eq) showToast(`Selected: ${eq.name}`);
-    }
-
-    // =========================================================================
-    // 5. THREE.JS 3D SCENE + 2D ISOMETRIC CANVAS FALLBACK
-    // =========================================================================
-    const viewport = document.getElementById('viewport-container');
-    const canvas = document.getElementById('render-canvas');
-    const labelsOverlay = document.getElementById('labels-overlay');
-    const rendererModeTag = document.getElementById('renderer-mode-tag');
-
-    let renderer = null;
-    let scene = null;
-    let camera = null;
-    let controls = null;
-    let webglOk = true;
-
-    let structureGroup = null;
-    let equipmentGroup = null;
-    let shellItems = []; // { mesh, part, baseMat }
-    let equipNodeEntries = []; // { id, group, meshes: [{ mesh, baseHex, primaryDisc, secondaryDisc }], anchor: THREE.Vector3, iso2D: {x, y} }
-
-    const raycaster = new THREE.Raycaster();
-    const pointer = new THREE.Vector2();
-    let pointerDownPos = { x: 0, y: 0 };
-
-    // Camera smooth transition target
-    let camAnim = null;
-
-    const CAMERA_PRESETS = {
-      residential: {
-        overview: { pos: [12.5, 9.2, 13.5], target: [0.0, 2.2, 0.0] },
-        rooftop:  { pos: [10.0, 8.2, 7.5],  target: [2.8, 3.0, 0.0] },
-        mechroom: { pos: [5.5, 4.2, 6.2],   target: [-1.4, 1.5, -0.8] },
-        ductvent: { pos: [7.8, 7.8, 7.2],   target: [0.0, 4.4, -0.5] }
-      },
-      commercial: {
-        overview: { pos: [15.5, 11.0, 16.0], target: [0.0, 2.8, 0.0] },
-        rooftop:  { pos: [11.5, 10.5, 9.5],  target: [1.0, 5.4, 0.0] },
-        mechroom: { pos: [7.2, 4.5, 8.2],    target: [-1.8, 1.8, -0.8] },
-        ductvent: { pos: [9.5, 7.2, 8.5],    target: [0.5, 3.8, -0.4] }
-      }
+    // ============================================================================
+    // 5. APPLICATION STATE
+    // ============================================================================
+    const state = {
+      jurisdictionId: '11111111-1111-1111-1111-111111111111',
+      governingBuildingCode: 'IRC', // 'IRC' or 'IBC'
+      storiesAboveGrade: 2,
+      syntheticMeta: null,
+      activePresetId: 'new_house_full',
+      domainFilter: 'all',
+      searchQuery: '',
+      viewMode: 'cutaway', // 'cutaway' | 'solid' | 'discipline'
+      showLabels: true,
+      selectedNodeId: 'new_build',
+      // Map<scopeId, { id, action, location, fuel }>
+      activeItems: new Map()
     };
 
-    function applyCameraPreset(presetName) {
-      const bKey = state.buildingType;
-      const key = presetName === 'reset' ? 'overview' : presetName;
-      const preset = CAMERA_PRESETS[bKey][key] || CAMERA_PRESETS[bKey].overview;
+    state.syntheticMeta = generateSyntheticAppMeta(HAMPTON_ROADS_JURISDICTIONS[0]);
 
-      if (webglOk && camera && controls) {
-        camAnim = {
-          startPos: camera.position.clone(),
-          endPos: new THREE.Vector3(...preset.pos),
-          startTarget: controls.target.clone(),
-          endTarget: new THREE.Vector3(...preset.target),
-          t: 0
-        };
+    // ============================================================================
+    // 6. DETERMINISTIC DECISION ENGINE (MIRRORS v_chesapeake_application_routing_packet)
+    // ============================================================================
+    function evaluateUnifiedRoutingPacket() {
+      const jurisdiction = HAMPTON_ROADS_JURISDICTIONS.find(j => j.id === state.jurisdictionId) || HAMPTON_ROADS_JURISDICTIONS[0];
+      const isIrc = state.governingBuildingCode === 'IRC' && state.storiesAboveGrade <= 3;
+
+      const subPermitsMap = new Map();
+      const submittalsMap = new Map();
+      const milestonesMap = new Map();
+      const lineItemEvaluations = [];
+
+      let anyPermitRequired = false;
+      let rdpSealRequired = false;
+      let exteriorSitePlanRequired = false;
+      let chimneyVentCertGate = false;
+
+      function addSubPermit(discipline, customChapters = null) {
+        const meta = DISCIPLINE_META[discipline] || DISCIPLINE_META.building;
+        const govCode = isIrc ? meta.ircCode : meta.ibcCode;
+        if (!subPermitsMap.has(discipline)) {
+          subPermitsMap.set(discipline, {
+            discipline,
+            label: meta.label,
+            governing_code: govCode,
+            chapter_refs: customChapters || govCode,
+            is_required: true
+          });
+        } else if (customChapters) {
+          const existing = subPermitsMap.get(discipline);
+          if (!existing.chapter_refs.includes(customChapters)) {
+            existing.chapter_refs += ` • ${customChapters}`;
+          }
+        }
       }
-      showToast(`Camera: ${presetName === 'reset' ? 'Reset Orbit' : presetName.toUpperCase()}`);
+
+      function addSubmittal(code, title, codeRef, reqRdp = false) {
+        if (!submittalsMap.has(code)) {
+          submittalsMap.set(code, {
+            item_code: code,
+            title,
+            code_reference: codeRef,
+            requires_rdp_seal: reqRdp
+          });
+        } else if (reqRdp) {
+          submittalsMap.get(code).requires_rdp_seal = true;
+        }
+      }
+
+      function addMilestone(seq, name, codeRef, blocksFinal = false) {
+        if (!milestonesMap.has(name)) {
+          milestonesMap.set(name, {
+            sequence_order: seq,
+            milestone_name: name,
+            code_reference: codeRef,
+            blocks_final_inspection: blocksFinal
+          });
+        } else {
+          const existing = milestonesMap.get(name);
+          existing.sequence_order = Math.min(existing.sequence_order, seq);
+          existing.blocks_final_inspection = existing.blocks_final_inspection || blocksFinal;
+        }
+      }
+
+      // Evaluate each active item
+      for (const [scopeId, config] of state.activeItems.entries()) {
+        const cat = CATALOG_BY_ID.get(scopeId);
+        if (!cat) continue;
+
+        let permitRequired = true;
+        let exemptReason = null;
+
+        // NODE 2: Chesapeake / USBC Like-for-Like & Fuel Exemption Check
+        if (config.action === 'replacement_like_for_like') {
+          if (['natural_gas', 'propane', 'fuel_oil'].includes(config.fuel)) {
+            permitRequired = true; // Chesapeake rule: gas/oil same-for-same requires permit
+          } else if (
+            config.fuel === 'electric' &&
+            cat.id === 'hvac_units' &&
+            !['rooftop', 'exterior_grade', 'underground'].includes(config.location) &&
+            isIrc
+          ) {
+            permitRequired = false;
+            exemptReason = 'Chesapeake Q1 Rule: Eligible interior like-for-like residential electric HVAC replacement (verify no duct/wiring/location changes).';
+          }
+        }
+
+        if (!permitRequired) {
+          lineItemEvaluations.push({
+            id: cat.id,
+            label: cat.label,
+            domain: cat.domain,
+            action: config.action,
+            location: config.location,
+            fuel: config.fuel,
+            permit_required: false,
+            exemption_reason: exemptReason
+          });
+          continue;
+        }
+
+        anyPermitRequired = true;
+
+        // Primary discipline sub-permit
+        addSubPermit(cat.primaryDiscipline, cat.codeRefs);
+
+        // Commercial RDP Seal Gate (USBC / VCC Ch. 1)
+        const itemRdp = !isIrc && cat.requiresRdpCommercial;
+        if (itemRdp) {
+          rdpSealRequired = true;
+        }
+
+        // Exterior / Rooftop / Underground Site Plan Gate (CHES_EXT_SITE_PLAN / IZC Ch. 8)
+        const isExteriorLoc = ['rooftop', 'exterior_grade', 'underground'].includes(config.location);
+        if (cat.requiresSitePlanOut || isExteriorLoc) {
+          exteriorSitePlanRequired = true;
+          addSubPermit('zoning_sign', 'IZC Ch. 8 / CBPA Overlay');
+          addSubmittal(
+            'CHES_EXT_SITE_PLAN',
+            'Exterior Equipment, Structure & Utility Site Plan (Setbacks, Screening & CBPA)',
+            `${jurisdiction.shortName.replace(' (Default)', '')} Zoning / IZC Ch. 8`,
+            false
+          );
+        }
+
+        // Companion disciplines
+        for (const comp of cat.companionDisciplines) {
+          if (comp === 'fuel_gas') {
+            if (['natural_gas', 'propane'].includes(config.fuel) || cat.primaryDiscipline === 'fuel_gas') {
+              addSubPermit('fuel_gas', 'IFGC Ch. 1-8');
+            }
+          } else if (comp === 'zoning_sign') {
+            if (isExteriorLoc || cat.requiresSitePlanOut || cat.id === 'change_of_occupancy') {
+              addSubPermit('zoning_sign', 'IZC Ch. 8 & 11');
+            }
+          } else if (comp === 'electrical') {
+            if (['electric', 'heat_pump', 'natural_gas', 'propane', 'fuel_oil'].includes(config.fuel) || cat.domain === 'trade') {
+              addSubPermit('electrical', isIrc ? 'IRC Ch. 34-43' : 'NFPA 70');
+            }
+          } else if (comp === 'fire') {
+            if (!isIrc || ['exhaust_specialty', 'fireplaces_appliances', 'ELEC_DER_GEN_EV_POOL', 'ELEC_LIFE_SAFETY_CIRCUITS'].includes(cat.id)) {
+              addSubPermit('fire', 'IFC / VCC');
+            }
+          } else {
+            addSubPermit(comp);
+          }
+        }
+
+        // Default submittals
+        for (const sub of cat.defaultSubmittals) {
+          addSubmittal(sub.code, sub.title, cat.codeRefs, itemRdp);
+        }
+
+        // Default inspection milestones
+        for (const mile of cat.defaultMilestones) {
+          addMilestone(mile.seq, mile.name, `VCC Ch. 1 / ${cat.codeRefs}`, false);
+        }
+
+        // Chesapeake Pre-Final Chimney / Vent Certification Gate (Sequence 85)
+        if (cat.requiresVentCert || ['natural_gas', 'propane', 'fuel_oil', 'solid_fuel'].includes(config.fuel)) {
+          chimneyVentCertGate = true;
+          addMilestone(
+            85,
+            'Chesapeake Chimney / Vent Certification Gate (Pre-Final Hold)',
+            'Chesapeake Mechanical Div. / IMC Ch. 8 / IFGC Ch. 5',
+            true
+          );
+        }
+
+        lineItemEvaluations.push({
+          id: cat.id,
+          label: cat.label,
+          domain: cat.domain,
+          action: config.action,
+          location: config.location,
+          fuel: config.fuel,
+          permit_required: true,
+          rdp_seal_required: itemRdp
+        });
+      }
+
+      const subPermits = Array.from(subPermitsMap.values());
+      const submittals = Array.from(submittalsMap.values());
+      const milestones = Array.from(milestonesMap.values()).sort((a, b) => a.sequence_order - b.sequence_order);
+
+      return {
+        application_number: state.syntheticMeta.applicationNumber,
+        jurisdiction_id: jurisdiction.id,
+        jurisdiction_name: jurisdiction.name,
+        portal_name: jurisdiction.portal,
+        property_address: state.syntheticMeta.propertyAddress,
+        parcel_id: state.syntheticMeta.parcelId,
+        applicant_name: state.syntheticMeta.applicantName,
+        contractor_license: state.syntheticMeta.contractorLicense,
+        zoning_district: isIrc ? jurisdiction.zoningDefaultRes : jurisdiction.zoningDefaultCom,
+        governing_building_code: isIrc ? 'IRC' : 'IBC / IEBC / VCC',
+        stories_above_grade: state.storiesAboveGrade,
+        permit_required: anyPermitRequired,
+        rdp_seal_required: rdpSealRequired,
+        exterior_site_plan_required: exteriorSitePlanRequired,
+        chimney_vent_cert_gate: chimneyVentCertGate,
+        sub_permits: subPermits,
+        submittal_items: submittals,
+        inspection_milestones: milestones,
+        line_item_evaluations: lineItemEvaluations
+      };
     }
 
-    function initWebGL() {
+    // ============================================================================
+    // 7. THREE.JS 3D SCENE & 2D ISOMETRIC FALLBACK ENGINE
+    // ============================================================================
+    let scene, camera, renderer, raycaster, mouse;
+    let useWebGL = true;
+    let houseGroup, commercialGroup, sitePlanOverlayMesh, ventBeaconRing;
+    const nodeMeshes = new Map(); // scopeId -> THREE.Mesh
+    const calloutElements = new Map(); // scopeId -> HTMLElement
+
+    // Orbit state
+    const orbit = {
+      theta: 0.68,
+      phi: 1.04,
+      radius: 14.5,
+      target: new THREE.Vector3(0, 1.4, 0),
+      goalTheta: 0.68,
+      goalPhi: 1.04,
+      goalRadius: 14.5,
+      goalTarget: new THREE.Vector3(0, 1.4, 0),
+      isDragging: false,
+      isPanning: false,
+      prevX: 0,
+      prevY: 0
+    };
+
+    const CAMERA_PRESETS = {
+      overview: { theta: 0.68, phi: 1.04, radius: 14.5, target: [0, 1.4, 0] },
+      site:     { theta: 0.15, phi: 0.55, radius: 17.5, target: [0.5, 0.5, -0.5] },
+      exterior: { theta: 1.15, phi: 1.12, radius: 11.5, target: [1.8, 1.0, 0.8] },
+      interior: { theta: 0.45, phi: 1.18, radius: 8.8,  target: [0, 1.4, 0] },
+      roof:     { theta: -0.75, phi: 0.85, radius: 10.2, target: [-0.8, 2.8, 0.2] },
+      reset:    { theta: 0.68, phi: 1.04, radius: 14.5, target: [0, 1.4, 0] }
+    };
+
+    function init3DScene() {
+      const container = document.getElementById('threeCanvasContainer');
       try {
-        renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.setSize(container.clientWidth, container.clientHeight);
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-
-        scene = new THREE.Scene();
-        scene.background = new THREE.Color('#09101f');
-        scene.fog = new THREE.FogExp2('#09101f', 0.016);
-
-        const w = viewport.clientWidth || 800;
-        const h = viewport.clientHeight || 560;
-        camera = new THREE.PerspectiveCamera(44, w / h, 0.1, 150);
-        camera.position.set(12.5, 9.2, 13.5);
-
-        controls = new OrbitControls(camera, canvas);
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.06;
-        controls.target.set(0, 2.2, 0);
-        controls.minDistance = 4.5;
-        controls.maxDistance = 34;
-        controls.maxPolarAngle = Math.PI * 0.49;
-
-        // Lighting
-        const hemi = new THREE.HemisphereLight('#e2e8f0', '#1e293b', 1.0);
-        hemi.position.set(0, 24, 0);
-        scene.add(hemi);
-
-        const sun = new THREE.DirectionalLight('#ffffff', 1.35);
-        sun.position.set(14, 20, 15);
-        sun.castShadow = true;
-        sun.shadow.mapSize.width = 2048;
-        sun.shadow.mapSize.height = 2048;
-        sun.shadow.camera.near = 2;
-        sun.shadow.camera.far = 55;
-        const d = 15;
-        sun.shadow.camera.left = -d;
-        sun.shadow.camera.right = d;
-        sun.shadow.camera.top = d;
-        sun.shadow.camera.bottom = -d;
-        scene.add(sun);
-
-        const rim = new THREE.DirectionalLight('#38bdf8', 0.4);
-        rim.position.set(-12, 9, -12);
-        scene.add(rim);
-
-        structureGroup = new THREE.Group();
-        equipmentGroup = new THREE.Group();
-        scene.add(structureGroup);
-        scene.add(equipmentGroup);
-      } catch (e) {
-        webglOk = false;
-        rendererModeTag.textContent = '2D Isometric Fallback • Click Nodes';
-      }
-    }
-
-    function makeStdMat(hex, roughness = 0.55, metalness = 0.15) {
-      return new THREE.MeshStandardMaterial({ color: hex, roughness, metalness });
-    }
-
-    function addShellBox(w, h, d, x, y, z, hex, part) {
-      const mat = makeStdMat(hex, 0.75, 0.08);
-      const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
-      mesh.position.set(x, y, z);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      structureGroup.add(mesh);
-      shellItems.push({ mesh, part, baseMat: mat });
-      return mesh;
-    }
-
-    function addEquipPart(parent, equipId, geo, x, y, z, baseHex, primaryDisc, secondaryDisc = null, rot = [0, 0, 0]) {
-      const mat = makeStdMat(baseHex, 0.42, 0.25);
-      const mesh = new THREE.Mesh(geo, mat);
-      mesh.position.set(x, y, z);
-      mesh.rotation.set(rot[0], rot[1], rot[2]);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      mesh.userData.equipId = equipId;
-      parent.add(mesh);
-      return { mesh, baseHex, primaryDisc, secondaryDisc };
-    }
-
-    function rebuildSceneGeometry() {
-      // Build callout HTML badges regardless of WebGL / 2D fallback
-      labelsOverlay.innerHTML = '';
-
-      if (!webglOk) {
+        container.appendChild(renderer.domElement);
+      } catch (err) {
+        useWebGL = false;
+        container.classList.add('hidden');
+        document.getElementById('fallback2dCanvas').classList.remove('hidden');
         draw2DFallback();
         return;
       }
 
-      while (structureGroup.children.length > 0) structureGroup.remove(structureGroup.children[0]);
-      while (equipmentGroup.children.length > 0) equipmentGroup.remove(equipmentGroup.children[0]);
-      shellItems = [];
-      equipNodeEntries = [];
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color('#070b14');
+      scene.fog = new THREE.FogExp2('#070b14', 0.024);
 
-      // Lot & Grid Helper
-      addShellBox(26, 0.25, 26, 0, -0.125, 0, '#131d31', 'ground');
-      const grid = new THREE.GridHelper(24, 24, '#334155', '#1e293b');
-      grid.position.y = 0.01;
-      structureGroup.add(grid);
+      camera = new THREE.PerspectiveCamera(42, container.clientWidth / container.clientHeight, 0.1, 100);
 
-      if (state.buildingType === 'residential') {
-        // ---------------------------------------------------------------------
-        // RESIDENTIAL (IRC 1-/2-FAMILY DWELLING)
-        // ---------------------------------------------------------------------
-        addShellBox(8.2, 0.3, 6.2, 0, 0.15, 0, '#475569', 'slab');
-        addShellBox(7.8, 0.18, 5.8, 0, 2.3, 0, '#cbd5e1', 'floor');
-        addShellBox(7.8, 0.18, 5.8, 0, 4.5, 0, '#cbd5e1', 'floor');
+      // Lights
+      const hemiLight = new THREE.HemisphereLight(0xdbeafe, 0x1e293b, 0.95);
+      scene.add(hemiLight);
 
-        // Back & Left solid walls
-        addShellBox(7.8, 4.2, 0.22, 0, 2.4, -2.8, '#e2e8f0', 'wall');
-        addShellBox(0.22, 4.2, 5.6, -3.8, 2.4, 0, '#e2e8f0', 'wall');
-        // Interior partition wall separating Mech/Utility closet
-        addShellBox(0.16, 2.1, 3.0, -0.3, 1.35, -1.3, '#cbd5e1', 'interior');
+      const dirLight = new THREE.DirectionalLight(0xffffff, 0.95);
+      dirLight.position.set(10, 16, 11);
+      dirLight.castShadow = true;
+      dirLight.shadow.mapSize.width = 1024;
+      dirLight.shadow.mapSize.height = 1024;
+      scene.add(dirLight);
 
-        // Front & Right cutaway walls
-        addShellBox(7.8, 4.2, 0.22, 0, 2.4, 2.8, '#94a3b8', 'cutaway');
-        addShellBox(0.22, 4.2, 5.6, 3.8, 2.4, 0, '#94a3b8', 'cutaway');
+      const rimLight = new THREE.DirectionalLight(0x38bdf8, 0.35);
+      rimLight.position.set(-10, 8, -10);
+      scene.add(rimLight);
 
-        // Pitched Gable Roof (Rear kept, Front cutaway)
-        const rearRoof = addShellBox(8.4, 0.22, 3.9, 0, 5.55, -1.4, '#334155', 'roof');
-        rearRoof.rotation.x = Math.PI * 0.19;
-        const frontRoof = addShellBox(8.4, 0.22, 3.9, 0, 5.55, 1.4, '#475569', 'cutaway');
-        frontRoof.rotation.x = -Math.PI * 0.19;
+      // Parcel Lot Ground & Grid
+      const lotGeo = new THREE.BoxGeometry(13.5, 0.2, 11.5);
+      const lotMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.9 });
+      const lotMesh = new THREE.Mesh(lotGeo, lotMat);
+      lotMesh.position.y = -0.1;
+      lotMesh.receiveShadow = true;
+      scene.add(lotMesh);
 
-        // 1. Exterior Heat Pump Condenser on Grade Pad
-        {
-          const g = new THREE.Group();
-          const meshes = [];
-          meshes.push(addEquipPart(g, 'condenser_rtu', new THREE.BoxGeometry(1.9, 0.16, 1.9), 5.3, 0.08, 0.4, '#64748b', 'zoning_sign'));
-          meshes.push(addEquipPart(g, 'condenser_rtu', new THREE.BoxGeometry(1.15, 1.1, 1.15), 5.3, 0.71, 0.4, '#38bdf8', 'mechanical', 'zoning_sign'));
-          meshes.push(addEquipPart(g, 'condenser_rtu', new THREE.CylinderGeometry(0.4, 0.4, 0.08, 20), 5.3, 1.3, 0.4, '#0f172a', 'electrical'));
-          meshes.push(addEquipPart(g, 'condenser_rtu', new THREE.BoxGeometry(3.5, 0.09, 0.09), 3.2, 0.48, -0.3, '#f59e0b', 'mechanical'));
-          equipmentGroup.add(g);
-          equipNodeEntries.push({
-            id: 'condenser_rtu',
-            group: g,
-            meshes,
-            anchor: new THREE.Vector3(5.3, 1.65, 0.4),
-            iso2D: { x: 0.76, y: 0.66 }
+      const gridHelper = new THREE.GridHelper(13.5, 27, 0x1e293b, 0x131c31);
+      gridHelper.position.y = 0.01;
+      scene.add(gridHelper);
+
+      // Parcel Property Line Border
+      const propBorderGeo = new THREE.EdgesGeometry(new THREE.BoxGeometry(13.2, 0.05, 11.2));
+      const propBorderMat = new THREE.LineBasicMaterial({ color: 0x334155 });
+      const propBorder = new THREE.LineSegments(propBorderGeo, propBorderMat);
+      propBorder.position.y = 0.03;
+      scene.add(propBorder);
+
+      // Exterior Setback & Site Plan Overlay Zone (CHES_EXT_SITE_PLAN / IZC Ch. 8)
+      const siteZoneGeo = new THREE.PlaneGeometry(11.4, 9.4);
+      const siteZoneMat = new THREE.MeshBasicMaterial({
+        color: 0xf59e0b,
+        transparent: true,
+        opacity: 0.13,
+        side: THREE.DoubleSide
+      });
+      sitePlanOverlayMesh = new THREE.Mesh(siteZoneGeo, siteZoneMat);
+      sitePlanOverlayMesh.rotation.x = -Math.PI / 2;
+      sitePlanOverlayMesh.position.y = 0.025;
+      const siteEdges = new THREE.LineSegments(
+        new THREE.EdgesGeometry(new THREE.BoxGeometry(11.4, 0.04, 9.4)),
+        new THREE.LineBasicMaterial({ color: 0xf59e0b })
+      );
+      sitePlanOverlayMesh.add(siteEdges);
+      scene.add(sitePlanOverlayMesh);
+
+      // Build Residential House Group
+      houseGroup = buildResidentialShell();
+      scene.add(houseGroup);
+
+      // Build Commercial Building Group
+      commercialGroup = buildCommercialShell();
+      commercialGroup.visible = false;
+      scene.add(commercialGroup);
+
+      // Create Interactive 3D Permit Scope Nodes + Callout Labels
+      const overlay = document.getElementById('calloutOverlay');
+      for (const item of ALL_PERMIT_SCOPES) {
+        const geo = new THREE.BoxGeometry(item.size[0], item.size[1], item.size[2]);
+        const discColor = DISCIPLINE_META[item.primaryDiscipline].colorHex;
+        const mat = new THREE.MeshStandardMaterial({
+          color: discColor,
+          emissive: discColor,
+          emissiveIntensity: 0.25,
+          roughness: 0.35,
+          metalness: 0.15,
+          transparent: true,
+          opacity: 0.88
+        });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(item.pos[0], item.pos[1], item.pos[2]);
+        mesh.userData = { scopeId: item.id };
+
+        // Crisp wireframe outline
+        const wire = new THREE.LineSegments(
+          new THREE.EdgesGeometry(geo),
+          new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.55 })
+        );
+        mesh.add(wire);
+
+        scene.add(mesh);
+        nodeMeshes.set(item.id, mesh);
+
+        // Pre-Final Chimney/Vent Gate Beacon Ring
+        if (item.id === 'chimneys_vents') {
+          const ringGeo = new THREE.RingGeometry(0.55, 0.82, 32);
+          const ringMat = new THREE.MeshBasicMaterial({
+            color: 0xef4444,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.9
           });
+          ventBeaconRing = new THREE.Mesh(ringGeo, ringMat);
+          ventBeaconRing.rotation.x = -Math.PI / 2;
+          ventBeaconRing.position.set(item.pos[0], item.pos[1] + 0.95, item.pos[2]);
+          scene.add(ventBeaconRing);
         }
 
-        // 2. Gas Furnace / Air Handler (Utility Room)
-        {
-          const g = new THREE.Group();
-          const meshes = [];
-          meshes.push(addEquipPart(g, 'furnace_ahu', new THREE.BoxGeometry(1.05, 1.4, 1.0), -2.3, 1.0, -1.6, '#38bdf8', 'mechanical', 'fuel_gas'));
-          meshes.push(addEquipPart(g, 'furnace_ahu', new THREE.BoxGeometry(1.05, 0.55, 1.0), -2.3, 1.98, -1.6, '#7dd3fc', 'mechanical'));
-          meshes.push(addEquipPart(g, 'furnace_ahu', new THREE.BoxGeometry(1.4, 0.08, 0.08), -1.5, 1.25, -2.2, '#fbbf24', 'fuel_gas'));
-          equipmentGroup.add(g);
-          equipNodeEntries.push({
-            id: 'furnace_ahu',
-            group: g,
-            meshes,
-            anchor: new THREE.Vector3(-2.3, 2.25, -1.6),
-            iso2D: { x: 0.31, y: 0.57 }
-          });
-        }
-
-        // 3. Supply / Return Ductwork (Main & Attic Trunk + Branches)
-        {
-          const g = new THREE.Group();
-          const meshes = [];
-          meshes.push(addEquipPart(g, 'ductwork', new THREE.BoxGeometry(5.2, 0.34, 0.55), 0.3, 2.7, -1.4, '#38bdf8', 'mechanical', 'energy'));
-          meshes.push(addEquipPart(g, 'ductwork', new THREE.BoxGeometry(0.4, 0.32, 3.0), 1.4, 2.7, 0.2, '#7dd3fc', 'mechanical', 'energy'));
-          meshes.push(addEquipPart(g, 'ductwork', new THREE.BoxGeometry(4.4, 0.32, 0.5), 0.2, 4.85, -0.6, '#38bdf8', 'mechanical', 'energy'));
-          equipmentGroup.add(g);
-          equipNodeEntries.push({
-            id: 'ductwork',
-            group: g,
-            meshes,
-            anchor: new THREE.Vector3(1.2, 3.25, -0.6),
-            iso2D: { x: 0.52, y: 0.44 }
-          });
-        }
-
-        // 4. Tankless / Gas Water Heater
-        {
-          const g = new THREE.Group();
-          const meshes = [];
-          meshes.push(addEquipPart(g, 'water_heater', new THREE.CylinderGeometry(0.36, 0.36, 1.35, 20), -1.0, 0.98, -1.9, '#fbbf24', 'fuel_gas', 'mechanical'));
-          meshes.push(addEquipPart(g, 'water_heater', new THREE.BoxGeometry(0.08, 0.85, 0.08), -0.65, 1.35, -1.9, '#38bdf8', 'mechanical'));
-          equipmentGroup.add(g);
-          equipNodeEntries.push({
-            id: 'water_heater',
-            group: g,
-            meshes,
-            anchor: new THREE.Vector3(-1.0, 1.85, -1.9),
-            iso2D: { x: 0.39, y: 0.61 }
-          });
-        }
-
-        // 5. Kitchen Exhaust Hood (Residential Range Hood / Commercial Type I Node)
-        {
-          const g = new THREE.Group();
-          const meshes = [];
-          meshes.push(addEquipPart(g, 'kitchen_hood', new THREE.BoxGeometry(1.35, 0.3, 0.85), 1.8, 3.65, -2.1, '#f43f5e', 'fire', 'mechanical'));
-          meshes.push(addEquipPart(g, 'kitchen_hood', new THREE.BoxGeometry(0.36, 0.9, 0.36), 1.8, 4.2, -2.1, '#fb7185', 'fire'));
-          equipmentGroup.add(g);
-          equipNodeEntries.push({
-            id: 'kitchen_hood',
-            group: g,
-            meshes,
-            anchor: new THREE.Vector3(1.8, 4.35, -2.1),
-            iso2D: { x: 0.61, y: 0.47 }
-          });
-        }
-
-        // 6. Boiler / Hydronic Loop
-        {
-          const g = new THREE.Group();
-          const meshes = [];
-          meshes.push(addEquipPart(g, 'boiler_hydronic', new THREE.BoxGeometry(0.95, 1.15, 0.85), -2.4, 0.88, 0.6, '#c084fc', 'mechanical', 'energy'));
-          meshes.push(addEquipPart(g, 'boiler_hydronic', new THREE.CylinderGeometry(0.22, 0.22, 0.55, 16), -1.65, 1.35, 0.6, '#38bdf8', 'mechanical'));
-          meshes.push(addEquipPart(g, 'boiler_hydronic', new THREE.BoxGeometry(2.6, 0.09, 0.09), -1.0, 0.55, 0.9, '#a855f7', 'energy'));
-          equipmentGroup.add(g);
-          equipNodeEntries.push({
-            id: 'boiler_hydronic',
-            group: g,
-            meshes,
-            anchor: new THREE.Vector3(-2.3, 1.75, 0.6),
-            iso2D: { x: 0.27, y: 0.68 }
-          });
-        }
-
-        // 7. Chimney / Vent Stack & Combustion Air
-        {
-          const g = new THREE.Group();
-          const meshes = [];
-          meshes.push(addEquipPart(g, 'chimney_vent', new THREE.CylinderGeometry(0.16, 0.16, 5.4, 18), -2.3, 3.8, -1.6, '#cbd5e1', 'fuel_gas', 'zoning_sign'));
-          meshes.push(addEquipPart(g, 'chimney_vent', new THREE.CylinderGeometry(0.32, 0.18, 0.28, 18), -2.3, 6.6, -1.6, '#34d399', 'zoning_sign'));
-          meshes.push(addEquipPart(g, 'chimney_vent', new THREE.BoxGeometry(0.16, 0.55, 0.55), -3.86, 1.4, -1.6, '#fbbf24', 'fuel_gas'));
-          equipmentGroup.add(g);
-          equipNodeEntries.push({
-            id: 'chimney_vent',
-            group: g,
-            meshes,
-            anchor: new THREE.Vector3(-2.3, 6.95, -1.6),
-            iso2D: { x: 0.34, y: 0.22 }
-          });
-        }
-      } else {
-        // ---------------------------------------------------------------------
-        // COMMERCIAL (IBC / IMC BUILDING WITH ROOFTOP RTU & MECH ROOM)
-        // ---------------------------------------------------------------------
-        addShellBox(11.4, 0.35, 7.6, 0, 0.175, 0, '#475569', 'slab');
-        addShellBox(11.0, 0.24, 7.2, 0, 4.8, 0, '#64748b', 'roof');
-        // Parapet walls around flat commercial roof
-        addShellBox(11.2, 0.55, 0.22, 0, 5.1, -3.5, '#334155', 'roof');
-        addShellBox(0.22, 0.55, 7.2, -5.5, 5.1, 0, '#334155', 'roof');
-        addShellBox(11.2, 0.55, 0.22, 0, 5.1, 3.5, '#475569', 'cutaway');
-        addShellBox(0.22, 0.55, 7.2, 5.5, 5.1, 0, '#475569', 'cutaway');
-
-        // Back & Left commercial walls
-        addShellBox(11.0, 4.5, 0.25, 0, 2.55, -3.5, '#cbd5e1', 'wall');
-        addShellBox(0.25, 4.5, 7.0, -5.4, 2.55, 0, '#cbd5e1', 'wall');
-        // Mechanical Room partition
-        addShellBox(0.2, 4.4, 4.2, -1.6, 2.5, -1.4, '#94a3b8', 'interior');
-
-        // Front & Right cutaway walls
-        addShellBox(11.0, 4.5, 0.25, 0, 2.55, 3.5, '#94a3b8', 'cutaway');
-        addShellBox(0.25, 4.5, 7.0, 5.4, 2.55, 0, '#94a3b8', 'cutaway');
-
-        // 1. Rooftop Packaged Heat Pump / Gas RTU on Roof Curb
-        {
-          const g = new THREE.Group();
-          const meshes = [];
-          meshes.push(addEquipPart(g, 'condenser_rtu', new THREE.BoxGeometry(2.6, 0.32, 2.0), 1.4, 5.08, -0.4, '#34d399', 'zoning_sign'));
-          meshes.push(addEquipPart(g, 'condenser_rtu', new THREE.BoxGeometry(2.45, 1.35, 1.85), 1.4, 5.9, -0.4, '#38bdf8', 'mechanical', 'zoning_sign'));
-          meshes.push(addEquipPart(g, 'condenser_rtu', new THREE.CylinderGeometry(0.45, 0.45, 0.12, 20), 0.8, 6.62, -0.4, '#0f172a', 'electrical'));
-          meshes.push(addEquipPart(g, 'condenser_rtu', new THREE.CylinderGeometry(0.45, 0.45, 0.12, 20), 2.0, 6.62, -0.4, '#0f172a', 'electrical'));
-          equipmentGroup.add(g);
-          equipNodeEntries.push({
-            id: 'condenser_rtu',
-            group: g,
-            meshes,
-            anchor: new THREE.Vector3(1.4, 7.05, -0.4),
-            iso2D: { x: 0.58, y: 0.22 }
-          });
-        }
-
-        // 2. Commercial Makeup Air / Furnace / Air Handler in Mech Room
-        {
-          const g = new THREE.Group();
-          const meshes = [];
-          meshes.push(addEquipPart(g, 'furnace_ahu', new THREE.BoxGeometry(1.5, 2.1, 1.3), -3.8, 1.4, -2.0, '#38bdf8', 'mechanical', 'fuel_gas'));
-          meshes.push(addEquipPart(g, 'furnace_ahu', new THREE.BoxGeometry(1.8, 0.1, 0.1), -2.8, 1.8, -2.8, '#fbbf24', 'fuel_gas'));
-          equipmentGroup.add(g);
-          equipNodeEntries.push({
-            id: 'furnace_ahu',
-            group: g,
-            meshes,
-            anchor: new THREE.Vector3(-3.8, 2.75, -2.0),
-            iso2D: { x: 0.25, y: 0.52 }
-          });
-        }
-
-        // 3. Commercial Supply / Return Ductwork + Fire/Smoke Dampers
-        {
-          const g = new THREE.Group();
-          const meshes = [];
-          meshes.push(addEquipPart(g, 'ductwork', new THREE.BoxGeometry(7.8, 0.48, 0.85), 0.4, 4.1, -0.4, '#38bdf8', 'mechanical', 'energy'));
-          meshes.push(addEquipPart(g, 'ductwork', new THREE.BoxGeometry(0.55, 0.45, 4.2), 2.8, 4.1, 0.6, '#7dd3fc', 'mechanical', 'energy'));
-          meshes.push(addEquipPart(g, 'ductwork', new THREE.BoxGeometry(0.22, 0.62, 1.0), -1.6, 4.1, -0.4, '#f43f5e', 'fire'));
-          equipmentGroup.add(g);
-          equipNodeEntries.push({
-            id: 'ductwork',
-            group: g,
-            meshes,
-            anchor: new THREE.Vector3(0.4, 4.65, -0.4),
-            iso2D: { x: 0.52, y: 0.41 }
-          });
-        }
-
-        // 4. Commercial Tankless / Gas Water Heater Bank
-        {
-          const g = new THREE.Group();
-          const meshes = [];
-          meshes.push(addEquipPart(g, 'water_heater', new THREE.CylinderGeometry(0.45, 0.45, 1.75, 20), -2.4, 1.22, -2.4, '#fbbf24', 'fuel_gas', 'mechanical'));
-          meshes.push(addEquipPart(g, 'water_heater', new THREE.BoxGeometry(0.55, 0.9, 0.35), -2.4, 1.7, -1.5, '#38bdf8', 'mechanical'));
-          equipmentGroup.add(g);
-          equipNodeEntries.push({
-            id: 'water_heater',
-            group: g,
-            meshes,
-            anchor: new THREE.Vector3(-2.4, 2.4, -2.2),
-            iso2D: { x: 0.34, y: 0.56 }
-          });
-        }
-
-        // 5. Type I Commercial Kitchen Exhaust Hood + Welded Grease Duct + Upblast Fan
-        {
-          const g = new THREE.Group();
-          const meshes = [];
-          meshes.push(addEquipPart(g, 'kitchen_hood', new THREE.BoxGeometry(2.8, 0.55, 1.35), 2.5, 2.85, -2.4, '#f43f5e', 'fire', 'mechanical'));
-          meshes.push(addEquipPart(g, 'kitchen_hood', new THREE.BoxGeometry(0.65, 2.3, 0.65), 2.5, 4.25, -2.4, '#fb7185', 'fire'));
-          meshes.push(addEquipPart(g, 'kitchen_hood', new THREE.CylinderGeometry(0.55, 0.62, 0.65, 20), 2.5, 5.65, -2.4, '#f43f5e', 'fire', 'zoning_sign'));
-          equipmentGroup.add(g);
-          equipNodeEntries.push({
-            id: 'kitchen_hood',
-            group: g,
-            meshes,
-            anchor: new THREE.Vector3(2.5, 6.25, -2.4),
-            iso2D: { x: 0.72, y: 0.32 }
-          });
-        }
-
-        // 6. Commercial Boiler / Hydronic Loop
-        {
-          const g = new THREE.Group();
-          const meshes = [];
-          meshes.push(addEquipPart(g, 'boiler_hydronic', new THREE.BoxGeometry(1.4, 1.55, 1.15), -3.8, 1.12, 0.6, '#c084fc', 'mechanical', 'energy'));
-          meshes.push(addEquipPart(g, 'boiler_hydronic', new THREE.CylinderGeometry(0.3, 0.3, 0.85, 18), -2.7, 1.75, 0.6, '#38bdf8', 'mechanical'));
-          meshes.push(addEquipPart(g, 'boiler_hydronic', new THREE.BoxGeometry(3.4, 0.12, 0.12), -2.1, 0.85, 1.3, '#a855f7', 'energy'));
-          equipmentGroup.add(g);
-          equipNodeEntries.push({
-            id: 'boiler_hydronic',
-            group: g,
-            meshes,
-            anchor: new THREE.Vector3(-3.8, 2.2, 0.6),
-            iso2D: { x: 0.24, y: 0.68 }
-          });
-        }
-
-        // 7. Commercial Chimney / Vent Stack & Combustion Air Louver
-        {
-          const g = new THREE.Group();
-          const meshes = [];
-          meshes.push(addEquipPart(g, 'chimney_vent', new THREE.CylinderGeometry(0.22, 0.22, 4.6, 18), -3.8, 4.3, -2.0, '#cbd5e1', 'fuel_gas', 'zoning_sign'));
-          meshes.push(addEquipPart(g, 'chimney_vent', new THREE.CylinderGeometry(0.42, 0.24, 0.34, 18), -3.8, 6.75, -2.0, '#34d399', 'zoning_sign'));
-          meshes.push(addEquipPart(g, 'chimney_vent', new THREE.BoxGeometry(0.2, 0.85, 0.85), -5.48, 1.6, -2.0, '#fbbf24', 'fuel_gas'));
-          equipmentGroup.add(g);
-          equipNodeEntries.push({
-            id: 'chimney_vent',
-            group: g,
-            meshes,
-            anchor: new THREE.Vector3(-3.8, 7.15, -2.0),
-            iso2D: { x: 0.29, y: 0.18 }
-          });
-        }
+        // Projected HTML Callout Label
+        const pill = document.createElement('button');
+        pill.type = 'button';
+        pill.className = 'callout-pill absolute px-2 py-0.5 rounded-lg text-[10px] font-bold border shadow-md whitespace-nowrap flex items-center gap-1';
+        pill.innerHTML = `<span class="w-1.5 h-1.5 rounded-full" style="background:${discColor}"></span><span>${item.shortLabel}</span>`;
+        pill.addEventListener('click', (e) => {
+          e.stopPropagation();
+          selectNode(item.id);
+        });
+        overlay.appendChild(pill);
+        calloutElements.set(item.id, pill);
       }
 
-      // Create clickable HTML overlay tags for each 3D equipment node
-      equipNodeEntries.forEach((entry) => {
-        const meta = EQUIPMENT_NODES.find((e) => e.id === entry.id);
-        const disc = DISCIPLINE_META[meta.primaryDiscipline];
-        const tag = document.createElement('button');
-        tag.type = 'button';
-        tag.dataset.equip = entry.id;
-        tag.className = 'callout-label px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-950/90 border border-slate-700 text-slate-100 shadow-lg flex items-center gap-1.5';
-        tag.innerHTML = `<span class="w-2 h-2 rounded-full" style="background:${disc.hex}"></span><span>${meta.shortName}</span>`;
-        tag.addEventListener('click', (ev) => {
-          ev.stopPropagation();
-          selectEquipment(entry.id, true);
-        });
-        labelsOverlay.appendChild(tag);
-        entry.labelEl = tag;
+      // Raycasting & Pointer Events
+      raycaster = new THREE.Raycaster();
+      mouse = new THREE.Vector2();
+      setupPointerControls(renderer.domElement);
+
+      window.addEventListener('resize', onWindowResize);
+      update3DSceneVisuals();
+      animate();
+    }
+
+    function buildResidentialShell() {
+      const group = new THREE.Group();
+
+      // Concrete Slab / Crawl Foundation
+      const slab = new THREE.Mesh(
+        new THREE.BoxGeometry(5.2, 0.35, 4.6),
+        new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.85 })
+      );
+      slab.position.set(0, 0.175, 0);
+      group.add(slab);
+
+      // Main Walls (Cutaway-ready)
+      const wallMat = new THREE.MeshStandardMaterial({
+        color: 0x64748b,
+        transparent: true,
+        opacity: 0.24,
+        roughness: 0.6,
+        depthWrite: false
+      });
+      const walls = new THREE.Mesh(new THREE.BoxGeometry(5.0, 2.5, 4.4), wallMat);
+      walls.position.set(0, 1.6, 0);
+      walls.userData.isShellWall = true;
+      group.add(walls);
+
+      const wallEdges = new THREE.LineSegments(
+        new THREE.EdgesGeometry(new THREE.BoxGeometry(5.0, 2.5, 4.4)),
+        new THREE.LineBasicMaterial({ color: 0x475569 })
+      );
+      wallEdges.position.set(0, 1.6, 0);
+      group.add(wallEdges);
+
+      // Second Floor Deck Joist Plane
+      const floor2 = new THREE.Mesh(
+        new THREE.BoxGeometry(4.9, 0.12, 4.3),
+        new THREE.MeshStandardMaterial({ color: 0x334155, transparent: true, opacity: 0.35 })
+      );
+      floor2.position.set(0, 1.65, 0);
+      group.add(floor2);
+
+      // Gable Roof Prism
+      const roofShape = new THREE.Shape();
+      roofShape.moveTo(-2.7, 0);
+      roofShape.lineTo(2.7, 0);
+      roofShape.lineTo(0, 1.45);
+      roofShape.closePath();
+
+      const extrudeSettings = { depth: 4.7, bevelEnabled: false };
+      const roofGeo = new THREE.ExtrudeGeometry(roofShape, extrudeSettings);
+      roofGeo.translate(0, 0, -2.35);
+
+      const roofMat = new THREE.MeshStandardMaterial({
+        color: 0x475569,
+        transparent: true,
+        opacity: 0.26,
+        roughness: 0.7,
+        depthWrite: false
+      });
+      const roofMesh = new THREE.Mesh(roofGeo, roofMat);
+      roofMesh.position.set(0, 2.85, 0);
+      roofMesh.userData.isShellWall = true;
+      group.add(roofMesh);
+
+      const roofEdges = new THREE.LineSegments(
+        new THREE.EdgesGeometry(roofGeo),
+        new THREE.LineBasicMaterial({ color: 0x64748b })
+      );
+      roofEdges.position.set(0, 2.85, 0);
+      group.add(roofEdges);
+
+      return group;
+    }
+
+    function buildCommercialShell() {
+      const group = new THREE.Group();
+
+      const slab = new THREE.Mesh(
+        new THREE.BoxGeometry(6.2, 0.35, 5.2),
+        new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.85 })
+      );
+      slab.position.set(0, 0.175, 0);
+      group.add(slab);
+
+      const wallMat = new THREE.MeshStandardMaterial({
+        color: 0x475569,
+        transparent: true,
+        opacity: 0.24,
+        roughness: 0.5,
+        depthWrite: false
+      });
+      const body = new THREE.Mesh(new THREE.BoxGeometry(6.0, 3.2, 5.0), wallMat);
+      body.position.set(0, 1.95, 0);
+      body.userData.isShellWall = true;
+      group.add(body);
+
+      const edges = new THREE.LineSegments(
+        new THREE.EdgesGeometry(new THREE.BoxGeometry(6.0, 3.2, 5.0)),
+        new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.45 })
+      );
+      edges.position.set(0, 1.95, 0);
+      group.add(edges);
+
+      // Commercial Parapet Roof
+      const parapet = new THREE.LineSegments(
+        new THREE.EdgesGeometry(new THREE.BoxGeometry(6.1, 0.45, 5.1)),
+        new THREE.LineBasicMaterial({ color: 0x94a3b8 })
+      );
+      parapet.position.set(0, 3.75, 0);
+      group.add(parapet);
+
+      return group;
+    }
+
+    function setupPointerControls(domEl) {
+      let downX = 0, downY = 0;
+
+      domEl.addEventListener('pointerdown', (e) => {
+        downX = e.clientX;
+        downY = e.clientY;
+        orbit.prevX = e.clientX;
+        orbit.prevY = e.clientY;
+        if (e.button === 2 || e.shiftKey) {
+          orbit.isPanning = true;
+        } else {
+          orbit.isDragging = true;
+        }
       });
 
-      applyViewModeMaterials();
-      updateEquipmentHighlights();
+      window.addEventListener('pointermove', (e) => {
+        if (!orbit.isDragging && !orbit.isPanning) return;
+        const dx = e.clientX - orbit.prevX;
+        const dy = e.clientY - orbit.prevY;
+        orbit.prevX = e.clientX;
+        orbit.prevY = e.clientY;
+
+        if (orbit.isDragging) {
+          orbit.goalTheta -= dx * 0.0075;
+          orbit.goalPhi = Math.max(0.22, Math.min(1.48, orbit.goalPhi - dy * 0.0075));
+        } else if (orbit.isPanning) {
+          const panSpeed = orbit.goalRadius * 0.0012;
+          orbit.goalTarget.x -= dx * panSpeed * Math.cos(orbit.theta);
+          orbit.goalTarget.z += dx * panSpeed * Math.sin(orbit.theta);
+          orbit.goalTarget.y = Math.max(0, Math.min(5, orbit.goalTarget.y + dy * panSpeed));
+        }
+      });
+
+      window.addEventListener('pointerup', (e) => {
+        const moved = Math.hypot(e.clientX - downX, e.clientY - downY);
+        if (moved < 5 && e.target === domEl) {
+          handleCanvasClick(e);
+        }
+        orbit.isDragging = false;
+        orbit.isPanning = false;
+      });
+
+      domEl.addEventListener('contextmenu', (e) => e.preventDefault());
+
+      domEl.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        orbit.goalRadius = Math.max(5.5, Math.min(26, orbit.goalRadius + e.deltaY * 0.01));
+      }, { passive: false });
     }
 
-    function applyViewModeMaterials() {
-      if (!webglOk) {
+    function handleCanvasClick(event) {
+      if (!useWebGL || !raycaster) return;
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      const meshes = Array.from(nodeMeshes.values());
+      const hits = raycaster.intersectObjects(meshes, false);
+      if (hits.length > 0) {
+        const clickedId = hits[0].object.userData.scopeId;
+        if (clickedId) {
+          selectNode(clickedId);
+        }
+      }
+    }
+
+    function onWindowResize() {
+      const container = document.getElementById('threeCanvasContainer');
+      if (!useWebGL || !renderer || !container) {
         draw2DFallback();
         return;
       }
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    }
 
-      shellItems.forEach(({ mesh, part, baseMat }) => {
-        if (state.viewMode === 'solid') {
-          mesh.visible = true;
-          mesh.material = baseMat;
-          baseMat.transparent = false;
-          baseMat.opacity = 1.0;
-          baseMat.depthWrite = true;
-        } else if (state.viewMode === 'cutaway') {
-          if (part === 'cutaway') {
-            mesh.visible = false;
+    function update3DSceneVisuals() {
+      const packet = evaluateUnifiedRoutingPacket();
+      if (!useWebGL) {
+        draw2DFallback(packet);
+        return;
+      }
+
+      const isIrc = state.governingBuildingCode === 'IRC';
+      houseGroup.visible = isIrc;
+      commercialGroup.visible = !isIrc;
+
+      // Shell wall opacity by view mode
+      const wallOpacity = state.viewMode === 'solid' ? 0.88 : (state.viewMode === 'discipline' ? 0.14 : 0.24);
+      [houseGroup, commercialGroup].forEach(grp => {
+        grp.traverse(child => {
+          if (child.userData && child.userData.isShellWall && child.material) {
+            child.material.opacity = wallOpacity;
+            child.material.depthWrite = state.viewMode === 'solid';
+          }
+        });
+      });
+
+      // Exterior Site Plan zone highlight
+      if (sitePlanOverlayMesh) {
+        sitePlanOverlayMesh.visible = packet.exterior_site_plan_required;
+      }
+
+      // Chimney / Vent Certification Pre-Final Gate Beacon
+      if (ventBeaconRing) {
+        ventBeaconRing.visible = packet.chimney_vent_cert_gate;
+      }
+
+      // Update each 3D node appearance
+      for (const item of ALL_PERMIT_SCOPES) {
+        const mesh = nodeMeshes.get(item.id);
+        const pill = calloutElements.get(item.id);
+        if (!mesh) continue;
+
+        const isActive = state.activeItems.has(item.id);
+        const isSelected = state.selectedNodeId === item.id;
+        const discColor = DISCIPLINE_META[item.primaryDiscipline].colorHex;
+
+        if (isSelected) {
+          mesh.material.color.set('#ffffff');
+          mesh.material.emissive.set(discColor);
+          mesh.material.emissiveIntensity = 0.75;
+          mesh.material.opacity = 1.0;
+          mesh.scale.setScalar(1.16);
+        } else if (isActive) {
+          mesh.material.color.set(discColor);
+          mesh.material.emissive.set(discColor);
+          mesh.material.emissiveIntensity = state.viewMode === 'discipline' ? 0.55 : 0.35;
+          mesh.material.opacity = 0.94;
+          mesh.scale.setScalar(1.05);
+        } else {
+          mesh.material.color.set(state.viewMode === 'discipline' ? discColor : '#334155');
+          mesh.material.emissive.set('#0f172a');
+          mesh.material.emissiveIntensity = 0.05;
+          mesh.material.opacity = state.viewMode === 'solid' ? 0.15 : 0.32;
+          mesh.scale.setScalar(0.92);
+        }
+
+        if (pill) {
+          if (!state.showLabels || (!isActive && !isSelected)) {
+            pill.classList.add('hidden');
           } else {
-            mesh.visible = true;
-            const mat = baseMat.clone();
-            if (part === 'wall' || part === 'roof') {
-              mat.transparent = true;
-              mat.opacity = 0.72;
+            pill.classList.remove('hidden');
+            if (isSelected) {
+              pill.className = 'callout-pill absolute px-2.5 py-0.5 rounded-lg text-[10px] font-extrabold border shadow-lg whitespace-nowrap flex items-center gap-1.5 bg-white text-slate-950 border-sky-400';
+            } else {
+              pill.className = 'callout-pill absolute px-2 py-0.5 rounded-lg text-[10px] font-bold border shadow-md whitespace-nowrap flex items-center gap-1 bg-slate-900/90 text-slate-100 border-slate-600';
             }
-            mesh.material = mat;
-          }
-        } else if (state.viewMode === 'discipline') {
-          if (part === 'cutaway') {
-            mesh.visible = false;
-          } else {
-            mesh.visible = true;
-            const mat = baseMat.clone();
-            mat.color.set(part === 'ground' ? '#0f172a' : '#1e293b');
-            mat.transparent = part !== 'ground' && part !== 'slab';
-            mat.opacity = part === 'ground' || part === 'slab' ? 0.95 : 0.25;
-            mat.depthWrite = part === 'ground' || part === 'slab';
-            mesh.material = mat;
           }
         }
-      });
-
-      updateEquipmentHighlights();
-    }
-
-    function updateEquipmentHighlights() {
-      if (!webglOk) {
-        draw2DFallback();
-        return;
       }
-
-      equipNodeEntries.forEach((entry) => {
-        const isSelected = entry.id === state.selectedEquipId;
-        entry.meshes.forEach((mObj) => {
-          const discKey = mObj.primaryDisc || 'mechanical';
-          const targetHex = state.viewMode === 'discipline' ? DISCIPLINE_META[discKey].hex : mObj.baseHex;
-          mObj.mesh.material.color.set(targetHex);
-          mObj.mesh.material.emissive.set(isSelected ? targetHex : '#000000');
-          mObj.mesh.material.emissiveIntensity = isSelected ? 0.42 : 0.0;
-        });
-
-        if (entry.labelEl) {
-          entry.labelEl.style.display = state.showLabels ? 'flex' : 'none';
-          entry.labelEl.className = isSelected
-            ? 'callout-label px-2.5 py-1 rounded-full text-[11px] font-bold bg-sky-500 text-slate-950 border border-white shadow-xl flex items-center gap-1.5 z-20'
-            : 'callout-label px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-950/90 border border-slate-700 text-slate-100 shadow-lg flex items-center gap-1.5';
-        }
-      });
     }
 
-    function projectLabelsToScreen() {
-      if (!webglOk || !state.showLabels || !camera) return;
-      const w = viewport.clientWidth;
-      const h = viewport.clientHeight;
-      const tempV = new THREE.Vector3();
+    function updateProjectedCallouts() {
+      if (!useWebGL || !camera || !renderer) return;
+      const width = renderer.domElement.clientWidth;
+      const height = renderer.domElement.clientHeight;
+      const tempVec = new THREE.Vector3();
 
-      equipNodeEntries.forEach((entry) => {
-        if (!entry.labelEl) return;
-        tempV.copy(entry.anchor).project(camera);
-        if (tempV.z > 1) {
-          entry.labelEl.style.opacity = '0';
-          return;
+      for (const item of ALL_PERMIT_SCOPES) {
+        const pill = calloutElements.get(item.id);
+        const mesh = nodeMeshes.get(item.id);
+        if (!pill || !mesh || pill.classList.contains('hidden')) continue;
+
+        tempVec.set(mesh.position.x, mesh.position.y + item.size[1] * 0.65, mesh.position.z);
+        tempVec.project(camera);
+
+        if (tempVec.z > 1) {
+          pill.style.opacity = '0';
+          continue;
         }
-        const x = (tempV.x * 0.5 + 0.5) * w;
-        const y = (-tempV.y * 0.5 + 0.5) * h;
-        entry.labelEl.style.opacity = '1';
-        entry.labelEl.style.left = `${x}px`;
-        entry.labelEl.style.top = `${y}px`;
-      });
-    }
-
-    // -------------------------------------------------------------------------
-    // 2D Isometric Canvas Fallback (when WebGL is unavailable)
-    // -------------------------------------------------------------------------
-    let fallbackNodes2D = [];
-    function draw2DFallback() {
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-      const w = (canvas.width = viewport.clientWidth || 800);
-      const h = (canvas.height = viewport.clientHeight || 520);
-
-      ctx.clearRect(0, 0, w, h);
-      ctx.fillStyle = '#0b1324';
-      ctx.fillRect(0, 0, w, h);
-
-      // Isometric building schematic
-      const cx = w * 0.48;
-      const cy = h * 0.56;
-      const bw = Math.min(w * 0.34, 240);
-      const bh = bw * 0.52;
-
-      ctx.strokeStyle = state.viewMode === 'discipline' ? '#334155' : '#64748b';
-      ctx.lineWidth = 2;
-      ctx.fillStyle = state.viewMode === 'solid' ? 'rgba(51,65,85,0.85)' : 'rgba(30,41,59,0.45)';
-
-      // Floor diamond
-      ctx.beginPath();
-      ctx.moveTo(cx, cy - bh * 0.5);
-      ctx.lineTo(cx + bw, cy);
-      ctx.lineTo(cx, cy + bh * 0.5);
-      ctx.lineTo(cx - bw, cy);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-
-      // Upper roof outline
-      const roofOffset = state.buildingType === 'commercial' ? 115 : 135;
-      ctx.beginPath();
-      ctx.moveTo(cx, cy - bh * 0.5 - roofOffset);
-      ctx.lineTo(cx + bw, cy - roofOffset);
-      ctx.lineTo(cx, cy + bh * 0.5 - roofOffset);
-      ctx.lineTo(cx - bw, cy - roofOffset);
-      ctx.closePath();
-      ctx.stroke();
-
-      // Vertical corner posts
-      [
-        [cx - bw, cy],
-        [cx + bw, cy],
-        [cx, cy - bh * 0.5],
-        [cx, cy + bh * 0.5]
-      ].forEach(([px, py]) => {
-        ctx.beginPath();
-        ctx.moveTo(px, py);
-        ctx.lineTo(px, py - roofOffset);
-        ctx.stroke();
-      });
-
-      const positions = [
-        { id: 'condenser_rtu', x: cx + bw * 0.78, y: state.buildingType === 'commercial' ? cy - roofOffset - 12 : cy + 16 },
-        { id: 'furnace_ahu',   x: cx - bw * 0.38, y: cy - 38 },
-        { id: 'ductwork',      x: cx + bw * 0.12, y: cy - 72 },
-        { id: 'water_heater',  x: cx - bw * 0.14, y: cy - 22 },
-        { id: 'kitchen_hood',  x: cx + bw * 0.36, y: cy - 48 },
-        { id: 'boiler_hydronic', x: cx - bw * 0.44, y: cy + 14 },
-        { id: 'chimney_vent',  x: cx - bw * 0.35, y: cy - roofOffset - 24 }
-      ];
-
-      fallbackNodes2D = positions;
-      positions.forEach((p) => {
-        const eq = EQUIPMENT_NODES.find((e) => e.id === p.id);
-        const disc = DISCIPLINE_META[eq.primaryDiscipline];
-        const isSel = p.id === state.selectedEquipId;
-
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, isSel ? 13 : 9, 0, Math.PI * 2);
-        ctx.fillStyle = disc.hex;
-        ctx.fill();
-        if (isSel) {
-          ctx.lineWidth = 3;
-          ctx.strokeStyle = '#ffffff';
-          ctx.stroke();
-        }
-
-        if (state.showLabels) {
-          ctx.font = isSel ? 'bold 11px Inter, sans-serif' : '500 11px Inter, sans-serif';
-          ctx.fillStyle = isSel ? '#38bdf8' : '#e2e8f0';
-          ctx.textAlign = 'center';
-          ctx.fillText(eq.shortName, p.x, p.y - 16);
-        }
-      });
-    }
-
-    function resizeViewport() {
-      const w = viewport.clientWidth || 800;
-      const h = viewport.clientHeight || 560;
-      if (webglOk && renderer && camera) {
-        camera.aspect = w / h;
-        camera.updateProjectionMatrix();
-        renderer.setSize(w, h, false);
-      } else {
-        draw2DFallback();
+        const x = (tempVec.x * 0.5 + 0.5) * width;
+        const y = (-tempVec.y * 0.5 + 0.5) * height;
+        pill.style.opacity = '1';
+        pill.style.left = `${x}px`;
+        pill.style.top = `${y}px`;
       }
     }
 
     function animate() {
+      if (!useWebGL) return;
       requestAnimationFrame(animate);
-      if (!webglOk) return;
 
-      if (camAnim && camera && controls) {
-        camAnim.t = Math.min(1, camAnim.t + 0.065);
-        const ease = 1 - Math.pow(1 - camAnim.t, 3);
-        camera.position.lerpVectors(camAnim.startPos, camAnim.endPos, ease);
-        controls.target.lerpVectors(camAnim.startTarget, camAnim.endTarget, ease);
-        if (camAnim.t >= 1) camAnim = null;
+      // Smooth orbit damping
+      orbit.theta += (orbit.goalTheta - orbit.theta) * 0.12;
+      orbit.phi += (orbit.goalPhi - orbit.phi) * 0.12;
+      orbit.radius += (orbit.goalRadius - orbit.radius) * 0.12;
+      orbit.target.lerp(orbit.goalTarget, 0.12);
+
+      camera.position.x = orbit.target.x + orbit.radius * Math.sin(orbit.phi) * Math.sin(orbit.theta);
+      camera.position.y = orbit.target.y + orbit.radius * Math.cos(orbit.phi);
+      camera.position.z = orbit.target.z + orbit.radius * Math.sin(orbit.phi) * Math.cos(orbit.theta);
+      camera.lookAt(orbit.target);
+
+      // Pulse Chimney / Vent Gate Ring
+      if (ventBeaconRing && ventBeaconRing.visible) {
+        const s = 1 + 0.18 * Math.sin(Date.now() * 0.006);
+        ventBeaconRing.scale.set(s, s, 1);
       }
 
-      if (controls) controls.update();
-      if (renderer && scene && camera) {
-        renderer.render(scene, camera);
-        projectLabelsToScreen();
+      updateProjectedCallouts();
+      renderer.render(scene, camera);
+    }
+
+    // 2D Isometric Fallback Renderer if WebGL is unavailable
+    function draw2DFallback(packet = evaluateUnifiedRoutingPacket()) {
+      const canvas = document.getElementById('fallback2dCanvas');
+      if (!canvas) return;
+      const parent = canvas.parentElement;
+      canvas.width = parent.clientWidth || 600;
+      canvas.height = parent.clientHeight || 450;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2 + 40;
+      const iso = (x, y, z) => ({
+        sx: cx + (x - z) * 34,
+        sy: cy + (x + z) * 18 - y * 36
+      });
+
+      // Parcel Lot
+      const p1 = iso(-6, 0, -5), p2 = iso(6, 0, -5), p3 = iso(6, 0, 5), p4 = iso(-6, 0, 5);
+      ctx.fillStyle = '#0f172a';
+      ctx.strokeStyle = packet.exterior_site_plan_required ? '#f59e0b' : '#334155';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(p1.sx, p1.sy); ctx.lineTo(p2.sx, p2.sy); ctx.lineTo(p3.sx, p3.sy); ctx.lineTo(p4.sx, p4.sy);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+
+      // Draw Active Scope Nodes
+      for (const item of ALL_PERMIT_SCOPES) {
+        const pt = iso(item.pos[0], item.pos[1], item.pos[2]);
+        const isActive = state.activeItems.has(item.id);
+        const isSel = state.selectedNodeId === item.id;
+        ctx.beginPath();
+        ctx.arc(pt.sx, pt.sy, isSel ? 12 : (isActive ? 9 : 5), 0, Math.PI * 2);
+        ctx.fillStyle = isSel ? '#ffffff' : (isActive ? DISCIPLINE_META[item.primaryDiscipline].colorHex : '#334155');
+        ctx.fill();
+        if (isActive || isSel) {
+          ctx.fillStyle = '#e2e8f0';
+          ctx.font = '600 10px Inter, sans-serif';
+          ctx.fillText(item.shortLabel, pt.sx + 12, pt.sy + 3);
+        }
       }
     }
 
-    // =========================================================================
-    // 6. EVENT WIRING & INITIALIZATION
-    // =========================================================================
-    // Pointer click picking on 3D meshes or 2D fallback nodes
-    canvas.addEventListener('pointerdown', (e) => {
-      pointerDownPos = { x: e.clientX, y: e.clientY };
-    });
+    // ============================================================================
+    // 8. UI RENDERING & EVENT HANDLERS
+    // ============================================================================
+    function applyPreset(presetId) {
+      const preset = PRESET_SCENARIOS.find(p => p.id === presetId);
+      if (!preset) return;
+      state.activePresetId = presetId;
+      state.governingBuildingCode = preset.codePath;
+      state.activeItems.clear();
+      for (const entry of preset.items) {
+        state.activeItems.set(entry.id, { ...entry });
+      }
+      if (preset.items.length > 0) {
+        state.selectedNodeId = preset.items[0].id;
+      }
+      syncAllUI();
+    }
 
-    canvas.addEventListener('pointerup', (e) => {
-      const dist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
-      if (dist > 6) return; // Ignore orbit drags
+    function selectNode(scopeId) {
+      state.selectedNodeId = scopeId;
+      syncAllUI();
+    }
 
-      const rect = canvas.getBoundingClientRect();
-      const clickX = e.clientX - rect.left;
-      const clickY = e.clientY - rect.top;
+    function toggleScopeInApp(scopeId) {
+      if (state.activeItems.has(scopeId)) {
+        state.activeItems.delete(scopeId);
+      } else {
+        const cat = CATALOG_BY_ID.get(scopeId);
+        if (cat) {
+          state.activeItems.set(scopeId, {
+            id: cat.id,
+            action: cat.defaultAction,
+            location: cat.defaultLocation,
+            fuel: cat.defaultFuel
+          });
+        }
+      }
+      state.selectedNodeId = scopeId;
+      state.activePresetId = null;
+      syncAllUI();
+    }
 
-      if (!webglOk) {
-        const hit = fallbackNodes2D.find((n) => Math.hypot(n.x - clickX, n.y - clickY) <= 18);
-        if (hit) selectEquipment(hit.id, true);
+    function syncAllUI() {
+      const jurisdiction = HAMPTON_ROADS_JURISDICTIONS.find(j => j.id === state.jurisdictionId) || HAMPTON_ROADS_JURISDICTIONS[0];
+      const packet = evaluateUnifiedRoutingPacket();
+
+      // Update Header Code Path Buttons
+      const btnIRC = document.getElementById('btnCodeIRC');
+      const btnIBC = document.getElementById('btnCodeIBC');
+      if (state.governingBuildingCode === 'IRC') {
+        btnIRC.className = 'px-2.5 py-1 rounded-lg text-xs font-semibold transition bg-sky-600 text-white shadow';
+        btnIBC.className = 'px-2.5 py-1 rounded-lg text-xs font-semibold transition text-slate-400 hover:text-white';
+      } else {
+        btnIBC.className = 'px-2.5 py-1 rounded-lg text-xs font-semibold transition bg-indigo-600 text-white shadow';
+        btnIRC.className = 'px-2.5 py-1 rounded-lg text-xs font-semibold transition text-slate-400 hover:text-white';
+      }
+
+      // Render Presets
+      const presetContainer = document.getElementById('presetButtonsContainer');
+      presetContainer.innerHTML = PRESET_SCENARIOS.map(p => {
+        const active = state.activePresetId === p.id;
+        return `<button type="button" data-preset-id="${p.id}" class="px-2.5 py-1 rounded-xl text-[11px] font-semibold border transition ${
+          active
+            ? 'bg-sky-600/25 text-sky-300 border-sky-500/50 shadow-sm'
+            : 'bg-slate-950/80 hover:bg-slate-800 text-slate-300 border-slate-800'
+        }">${p.label}</button>`;
+      }).join('');
+
+      presetContainer.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', () => applyPreset(btn.dataset.presetId));
+      });
+
+      // Render Left Catalog List
+      renderCatalogList();
+
+      // Update HUD Application Header & Gate Badges
+      document.getElementById('hudAppNumber').textContent = packet.application_number;
+      document.getElementById('hudPortalBadge').textContent = `Portal: ${packet.portal_name}`;
+      document.getElementById('hudAddressLine').textContent = `${packet.property_address} • Parcel ${packet.parcel_id}`;
+      document.getElementById('hudApplicantLine').textContent = `Applicant: ${packet.applicant_name} (${packet.contractor_license}) • Zone ${packet.zoning_district}`;
+      document.getElementById('hudSupportContact').textContent = `Permits Div: ${jurisdiction.phone} • ${jurisdiction.email}`;
+
+      const badges = [];
+      if (state.activeItems.size === 0) {
+        badges.push(`<span class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700">NO SCOPES SELECTED</span>`);
+      } else if (packet.permit_required) {
+        badges.push(`<span class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">PERMIT REQUIRED (${packet.governing_building_code})</span>`);
+      } else {
+        badges.push(`<span class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">ELIGIBLE EXEMPTION (VERIFY AHJ)</span>`);
+      }
+
+      if (packet.rdp_seal_required) {
+        badges.push(`<span class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">USBC/VCC CH. 1 RDP SEAL REQUIRED</span>`);
+      }
+      if (packet.exterior_site_plan_required) {
+        badges.push(`<span class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">CHES_EXT_SITE_PLAN (IZC CH. 8)</span>`);
+      }
+      if (packet.chimney_vent_cert_gate) {
+        badges.push(`<span class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 beacon-pulse">CHIMNEY/VENT CERT GATE (SEQ 85)</span>`);
+      }
+      document.getElementById('hudStatusBadges').innerHTML = badges.join('');
+
+      // Spatial Alerts Banner in 3D Viewport
+      const spatialBanners = [];
+      if (packet.exterior_site_plan_required) {
+        spatialBanners.push(`<div class="px-2.5 py-1 rounded-xl bg-amber-950/90 border border-amber-500/50 text-[11px] font-semibold text-amber-200 shadow-lg backdrop-blur-md">Amber Parcel Zone: Exterior/Site Plan &amp; Setback Review Active (IZC Ch. 8)</div>`);
+      }
+      if (packet.chimney_vent_cert_gate) {
+        spatialBanners.push(`<div class="px-2.5 py-1 rounded-xl bg-rose-950/90 border border-rose-500/60 text-[11px] font-semibold text-rose-200 shadow-lg backdrop-blur-md">Pre-Final Hold: Chimney / Vent Certification Gate (Seq 85)</div>`);
+      }
+      document.getElementById('spatialAlertsBanner').innerHTML = spatialBanners.join('');
+
+      // Tab Counts
+      document.getElementById('countSubPermits').textContent = packet.sub_permits.length;
+      document.getElementById('countSubmittals').textContent = packet.submittal_items.length;
+      document.getElementById('countMilestones').textContent = packet.inspection_milestones.length;
+      document.getElementById('activeItemsCount').textContent = state.activeItems.size;
+
+      // Render HUD Tab Contents
+      renderSelectedNodeCard(packet);
+      renderActiveItemsList(packet);
+      renderSubPermitsList(packet);
+      renderSubmittalsList(packet);
+      renderMilestonesList(packet);
+
+      // Update 3D Scene
+      update3DSceneVisuals();
+    }
+
+    function renderCatalogList() {
+      const container = document.getElementById('catalogListContainer');
+      const query = state.searchQuery.trim().toLowerCase();
+
+      const filtered = ALL_PERMIT_SCOPES.filter(item => {
+        if (state.domainFilter !== 'all' && item.domain !== state.domainFilter) return false;
+        if (!query) return true;
+        return (
+          item.label.toLowerCase().includes(query) ||
+          item.shortLabel.toLowerCase().includes(query) ||
+          item.codeRefs.toLowerCase().includes(query) ||
+          item.primaryDiscipline.toLowerCase().includes(query)
+        );
+      });
+
+      container.innerHTML = filtered.map(item => {
+        const isActive = state.activeItems.has(item.id);
+        const isSelected = state.selectedNodeId === item.id;
+        const disc = DISCIPLINE_META[item.primaryDiscipline];
+
+        return `
+          <div class="rounded-xl border p-2 transition flex items-center justify-between gap-2 ${
+            isSelected
+              ? 'bg-slate-800/95 border-sky-500/70 shadow'
+              : isActive
+                ? 'bg-slate-900 border-slate-700'
+                : 'bg-slate-950/60 border-slate-800/80 hover:border-slate-700'
+          }">
+            <button type="button" data-select-scope="${item.id}" class="text-left flex-1 min-w-0">
+              <div class="flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full shrink-0" style="background:${disc.colorHex}"></span>
+                <span class="text-xs font-semibold text-slate-100 truncate">${item.shortLabel}</span>
+                <span class="text-[9px] uppercase font-bold px-1.5 py-0.2 rounded border ${disc.badgeClass}">${item.primaryDiscipline.replace('_', ' ')}</span>
+              </div>
+              <p class="text-[10px] text-slate-400 truncate mt-0.5">${item.label}</p>
+            </button>
+            <button type="button" data-toggle-scope="${item.id}" class="px-2 py-1 rounded-lg text-[10px] font-bold shrink-0 transition ${
+              isActive
+                ? 'bg-emerald-600/25 text-emerald-300 border border-emerald-500/40 hover:bg-rose-600/25 hover:text-rose-300 hover:border-rose-500/40'
+                : 'bg-slate-800 hover:bg-sky-600 text-slate-300 hover:text-white border border-slate-700'
+            }">
+              ${isActive ? 'ON' : '+ Add'}
+            </button>
+          </div>
+        `;
+      }).join('');
+
+      container.querySelectorAll('[data-select-scope]').forEach(el => {
+        el.addEventListener('click', () => selectNode(el.dataset.selectScope));
+      });
+      container.querySelectorAll('[data-toggle-scope]').forEach(el => {
+        el.addEventListener('click', () => toggleScopeInApp(el.dataset.toggleScope));
+      });
+    }
+
+    function renderSelectedNodeCard(packet) {
+      const card = document.getElementById('selectedNodeCard');
+      const cat = CATALOG_BY_ID.get(state.selectedNodeId) || ALL_PERMIT_SCOPES[0];
+      const disc = DISCIPLINE_META[cat.primaryDiscipline];
+      const activeConfig = state.activeItems.get(cat.id);
+      const isIncluded = Boolean(activeConfig);
+
+      const actionVal = activeConfig ? activeConfig.action : cat.defaultAction;
+      const locationVal = activeConfig ? activeConfig.location : cat.defaultLocation;
+      const fuelVal = activeConfig ? activeConfig.fuel : cat.defaultFuel;
+
+      const evalEntry = packet.line_item_evaluations.find(e => e.id === cat.id);
+
+      card.innerHTML = `
+        <div class="flex items-start justify-between gap-2">
+          <div>
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded border ${disc.badgeClass}">${disc.label}</span>
+              <span class="font-mono-code text-[10px] text-slate-400">${cat.id}</span>
+            </div>
+            <h4 class="text-sm font-bold text-white mt-1">${cat.label}</h4>
+            <p class="text-[11px] text-sky-300 font-medium">${cat.codeRefs}</p>
+          </div>
+          <button id="btnToggleSelectedNode" type="button" class="px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 ${
+            isIncluded
+              ? 'bg-rose-600/20 text-rose-300 border border-rose-500/40 hover:bg-rose-600/35'
+              : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow'
+          }">
+            ${isIncluded ? 'Remove Scope' : '+ Include in Permit'}
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-3">
+          <div>
+            <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Action Type</label>
+            <select id="selNodeAction" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-sky-500">
+              <option value="new_install" ${actionVal === 'new_install' ? 'selected' : ''}>New Install</option>
+              <option value="replacement_like_for_like" ${actionVal === 'replacement_like_for_like' ? 'selected' : ''}>Like-for-Like Swap</option>
+              <option value="replacement_upgrade" ${actionVal === 'replacement_upgrade' ? 'selected' : ''}>Upgrade / Upsize</option>
+              <option value="alteration" ${actionVal === 'alteration' ? 'selected' : ''}>Alteration / Remodel</option>
+              <option value="relocation" ${actionVal === 'relocation' ? 'selected' : ''}>Relocation</option>
+              <option value="red_tag_correction" ${actionVal === 'red_tag_correction' ? 'selected' : ''}>Red-Tag Correction</option>
+              <option value="removal" ${actionVal === 'removal' ? 'selected' : ''}>Removal / Demo</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Placement</label>
+            <select id="selNodeLocation" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-sky-500">
+              <option value="interior" ${locationVal === 'interior' ? 'selected' : ''}>Interior</option>
+              <option value="attic" ${locationVal === 'attic' ? 'selected' : ''}>Attic</option>
+              <option value="crawlspace" ${locationVal === 'crawlspace' ? 'selected' : ''}>Crawlspace</option>
+              <option value="basement" ${locationVal === 'basement' ? 'selected' : ''}>Basement / Mech Rm</option>
+              <option value="exterior_grade" ${locationVal === 'exterior_grade' ? 'selected' : ''}>Exterior Grade / Pad</option>
+              <option value="rooftop" ${locationVal === 'rooftop' ? 'selected' : ''}>Rooftop</option>
+              <option value="underground" ${locationVal === 'underground' ? 'selected' : ''}>Underground / Trench</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Fuel / Energy</label>
+            <select id="selNodeFuel" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-sky-500">
+              <option value="none" ${fuelVal === 'none' ? 'selected' : ''}>None / Structural</option>
+              <option value="electric" ${fuelVal === 'electric' ? 'selected' : ''}>Electric</option>
+              <option value="heat_pump" ${fuelVal === 'heat_pump' ? 'selected' : ''}>Heat Pump</option>
+              <option value="natural_gas" ${fuelVal === 'natural_gas' ? 'selected' : ''}>Natural Gas</option>
+              <option value="propane" ${fuelVal === 'propane' ? 'selected' : ''}>Propane (LP)</option>
+              <option value="fuel_oil" ${fuelVal === 'fuel_oil' ? 'selected' : ''}>Fuel Oil</option>
+            </select>
+          </div>
+        </div>
+
+        ${
+          evalEntry && !evalEntry.permit_required
+            ? `<div class="mt-2.5 p-2 rounded-xl bg-amber-950/60 border border-amber-500/40 text-[11px] text-amber-200">${evalEntry.exemption_reason}</div>`
+            : ''
+        }
+      `;
+
+      document.getElementById('btnToggleSelectedNode').addEventListener('click', () => toggleScopeInApp(cat.id));
+
+      const updateNodeConfig = () => {
+        const nextConfig = {
+          id: cat.id,
+          action: document.getElementById('selNodeAction').value,
+          location: document.getElementById('selNodeLocation').value,
+          fuel: document.getElementById('selNodeFuel').value
+        };
+        state.activeItems.set(cat.id, nextConfig);
+        state.activePresetId = null;
+        syncAllUI();
+      };
+
+      document.getElementById('selNodeAction').addEventListener('change', updateNodeConfig);
+      document.getElementById('selNodeLocation').addEventListener('change', updateNodeConfig);
+      document.getElementById('selNodeFuel').addEventListener('change', updateNodeConfig);
+    }
+
+    function renderActiveItemsList(packet) {
+      const list = document.getElementById('activeItemsList');
+      if (packet.line_item_evaluations.length === 0) {
+        list.innerHTML = `<div class="p-4 rounded-xl bg-slate-950/60 border border-slate-800 text-xs text-slate-400 text-center">No permit scopes active. Select a preset above or click "+ Add" on any building or trade scope.</div>`;
         return;
       }
 
-      pointer.x = (clickX / rect.width) * 2 - 1;
-      pointer.y = -(clickY / rect.height) * 2 + 1;
-      raycaster.setFromCamera(pointer, camera);
+      list.innerHTML = packet.line_item_evaluations.map(ev => {
+        const cat = CATALOG_BY_ID.get(ev.id);
+        const disc = DISCIPLINE_META[cat.primaryDiscipline];
+        return `
+          <button type="button" data-focus-item="${ev.id}" class="w-full text-left p-2.5 rounded-xl bg-slate-950/80 hover:bg-slate-800/80 border ${
+            state.selectedNodeId === ev.id ? 'border-sky-500/70' : 'border-slate-800'
+          } transition flex items-center justify-between gap-2">
+            <div class="min-w-0">
+              <div class="flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full shrink-0" style="background:${disc.colorHex}"></span>
+                <span class="text-xs font-semibold text-slate-100 truncate">${ev.label}</span>
+              </div>
+              <p class="text-[10px] text-slate-400 mt-0.5">
+                ${ev.action.replace(/_/g, ' ')} • ${ev.location.replace(/_/g, ' ')} • fuel: ${ev.fuel.replace(/_/g, ' ')}
+              </p>
+            </div>
+            <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold shrink-0 ${
+              ev.permit_required
+                ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
+                : 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
+            }">${ev.permit_required ? 'PERMIT' : 'EXEMPT'}</span>
+          </button>
+        `;
+      }).join('');
 
-      const hits = raycaster.intersectObjects(equipmentGroup.children, true);
-      if (hits.length > 0 && hits[0].object.userData.equipId) {
-        selectEquipment(hits[0].object.userData.equipId, true);
+      list.querySelectorAll('[data-focus-item]').forEach(btn => {
+        btn.addEventListener('click', () => selectNode(btn.dataset.focusItem));
+      });
+    }
+
+    function renderSubPermitsList(packet) {
+      const list = document.getElementById('subPermitsList');
+      if (packet.sub_permits.length === 0) {
+        list.innerHTML = `<div class="p-4 rounded-xl bg-slate-950/60 border border-slate-800 text-xs text-slate-400 text-center">No sub-permits triggered.</div>`;
+        return;
       }
-    });
 
-    // Building type header buttons
-    document.getElementById('btn-bldg-res').addEventListener('click', () => {
-      state.buildingType = 'residential';
-      syncParamControlsFromState();
-      rebuildSceneGeometry();
-      renderHUD();
-      applyCameraPreset('overview');
-    });
+      list.innerHTML = packet.sub_permits.map(sp => {
+        const meta = DISCIPLINE_META[sp.discipline] || DISCIPLINE_META.building;
+        return `
+          <div class="p-2.5 rounded-xl bg-slate-950/90 border border-slate-800 flex items-start justify-between gap-2">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full" style="background:${meta.colorHex}"></span>
+                <span class="text-xs font-bold text-white">${sp.label}</span>
+              </div>
+              <p class="text-[11px] text-slate-400 mt-1">${sp.chapter_refs}</p>
+            </div>
+            <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold border shrink-0 ${meta.badgeClass}">${sp.governing_code}</span>
+          </div>
+        `;
+      }).join('');
+    }
 
-    document.getElementById('btn-bldg-com').addEventListener('click', () => {
-      state.buildingType = 'commercial';
-      syncParamControlsFromState();
-      rebuildSceneGeometry();
-      renderHUD();
-      applyCameraPreset('overview');
-    });
+    function renderSubmittalsList(packet) {
+      const list = document.getElementById('submittalsList');
+      document.getElementById('rdpSummaryTag').textContent = packet.rdp_seal_required ? 'RDP Seal Required (VCC Ch. 1)' : 'Standard Submittals';
 
-    // View mode buttons
-    document.querySelectorAll('.mode-btn').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        state.viewMode = btn.dataset.mode;
-        document.querySelectorAll('.mode-btn').forEach((b) => {
-          b.className =
-            b.dataset.mode === state.viewMode
-              ? 'mode-btn px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-sky-500 text-slate-950 transition'
-              : 'mode-btn px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-200 hover:bg-slate-700 transition';
+      if (packet.submittal_items.length === 0) {
+        list.innerHTML = `<div class="p-4 rounded-xl bg-slate-950/60 border border-slate-800 text-xs text-slate-400 text-center">No submittal documents required.</div>`;
+        return;
+      }
+
+      list.innerHTML = packet.submittal_items.map(sub => `
+        <div class="p-2.5 rounded-xl bg-slate-950/90 border border-slate-800">
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-mono-code text-[10px] font-bold text-sky-300">${sub.item_code}</span>
+            ${
+              sub.requires_rdp_seal
+                ? `<span class="px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 text-[9px] font-bold">RDP SEAL</span>`
+                : `<span class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 text-[9px] font-semibold">STANDARD</span>`
+            }
+          </div>
+          <p class="text-xs font-semibold text-slate-100 mt-1">${sub.title}</p>
+          <p class="text-[10px] text-slate-400 mt-0.5">${sub.code_reference}</p>
+        </div>
+      `).join('');
+    }
+
+    function renderMilestonesList(packet) {
+      const list = document.getElementById('milestonesList');
+      if (packet.inspection_milestones.length === 0) {
+        list.innerHTML = `<div class="p-4 rounded-xl bg-slate-950/60 border border-slate-800 text-xs text-slate-400 text-center">No inspection milestones scheduled.</div>`;
+        return;
+      }
+
+      list.innerHTML = packet.inspection_milestones.map(m => `
+        <div class="p-2.5 rounded-xl border ${
+          m.blocks_final_inspection
+            ? 'bg-rose-950/40 border-rose-500/50'
+            : 'bg-slate-950/90 border-slate-800'
+        } flex items-start gap-2.5">
+          <span class="font-mono-code text-[11px] font-bold px-2 py-0.5 rounded-lg shrink-0 ${
+            m.blocks_final_inspection
+              ? 'bg-rose-600 text-white'
+              : 'bg-slate-800 text-sky-300'
+          }">#${m.sequence_order}</span>
+          <div class="min-w-0">
+            <p class="text-xs font-semibold ${m.blocks_final_inspection ? 'text-rose-200' : 'text-slate-100'}">${m.milestone_name}</p>
+            <p class="text-[10px] text-slate-400 mt-0.5">${m.code_reference}</p>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // ============================================================================
+    // 9. INITIALIZE DOM LISTENERS & BOOTSTRAP
+    // ============================================================================
+    function initUIControls() {
+      // Populate Jurisdictions
+      const jSelect = document.getElementById('jurisdictionSelect');
+      jSelect.innerHTML = HAMPTON_ROADS_JURISDICTIONS.map(j =>
+        `<option value="${j.id}">${j.shortName} — ${j.portal}</option>`
+      ).join('');
+      jSelect.addEventListener('change', (e) => {
+        state.jurisdictionId = e.target.value;
+        const j = HAMPTON_ROADS_JURISDICTIONS.find(item => item.id === state.jurisdictionId);
+        state.syntheticMeta = generateSyntheticAppMeta(j);
+        syncAllUI();
+      });
+
+      // IRC vs IBC Toggle
+      document.getElementById('btnCodeIRC').addEventListener('click', () => {
+        state.governingBuildingCode = 'IRC';
+        state.storiesAboveGrade = 2;
+        syncAllUI();
+      });
+      document.getElementById('btnCodeIBC').addEventListener('click', () => {
+        state.governingBuildingCode = 'IBC';
+        state.storiesAboveGrade = 4;
+        syncAllUI();
+      });
+
+      // Randomize Synthetic ID
+      document.getElementById('btnRandomizeApp').addEventListener('click', () => {
+        const j = HAMPTON_ROADS_JURISDICTIONS.find(item => item.id === state.jurisdictionId);
+        state.syntheticMeta = generateSyntheticAppMeta(j);
+        syncAllUI();
+      });
+
+      // Clear All Scopes
+      document.getElementById('btnClearScopes').addEventListener('click', () => {
+        state.activeItems.clear();
+        state.activePresetId = null;
+        syncAllUI();
+      });
+
+      // Domain Filter Tabs
+      document.querySelectorAll('.domain-filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.domainFilter = btn.dataset.domainFilter;
+          document.querySelectorAll('.domain-filter-btn').forEach(b => {
+            b.className = b === btn
+              ? 'domain-filter-btn px-2.5 py-1 rounded-lg bg-sky-600/25 text-sky-300 border border-sky-500/40'
+              : 'domain-filter-btn px-2.5 py-1 rounded-lg text-slate-400 hover:text-slate-200';
+          });
+          renderCatalogList();
         });
-        applyViewModeMaterials();
-        showToast(`View Mode: ${btn.textContent.trim()}`);
       });
-    });
 
-    // Toggle 3D callout labels
-    document.getElementById('toggle-labels-btn').addEventListener('click', (e) => {
-      state.showLabels = !state.showLabels;
-      e.target.textContent = `3D Callout Labels: ${state.showLabels ? 'ON' : 'OFF'}`;
-      updateEquipmentHighlights();
-    });
-
-    // Camera preset buttons
-    document.querySelectorAll('.cam-btn').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        applyCameraPreset(btn.dataset.cam);
+      // Scope Search
+      document.getElementById('scopeSearchInput').addEventListener('input', (e) => {
+        state.searchQuery = e.target.value;
+        renderCatalogList();
       });
+
+      // 3D View Modes
+      document.querySelectorAll('.view-mode-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.viewMode = btn.id === 'viewSolid' ? 'solid' : (btn.id === 'viewDiscipline' ? 'discipline' : 'cutaway');
+          document.querySelectorAll('.view-mode-btn').forEach(b => {
+            b.className = b === btn
+              ? 'view-mode-btn px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-sky-600 text-white'
+              : 'view-mode-btn px-2.5 py-1 rounded-lg text-[11px] font-semibold text-slate-300 hover:text-white';
+          });
+          update3DSceneVisuals();
+        });
+      });
+
+      // 3D Callout Labels Toggle
+      document.getElementById('btnToggleLabels').addEventListener('click', (e) => {
+        state.showLabels = !state.showLabels;
+        e.currentTarget.innerHTML = `<span class="w-2 h-2 rounded-full ${state.showLabels ? 'bg-sky-400' : 'bg-slate-500'}"></span><span>3D Labels: ${state.showLabels ? 'ON' : 'OFF'}</span>`;
+        update3DSceneVisuals();
+      });
+
+      // Camera Presets
+      document.querySelectorAll('.cam-preset-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const preset = CAMERA_PRESETS[btn.dataset.cam];
+          if (!preset) return;
+          orbit.goalTheta = preset.theta;
+          orbit.goalPhi = preset.phi;
+          orbit.goalRadius = preset.radius;
+          orbit.goalTarget.set(preset.target[0], preset.target[1], preset.target[2]);
+        });
+      });
+
+      // Inspector HUD Tabs
+      document.querySelectorAll('.hud-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const tab = btn.dataset.hudTab;
+          document.querySelectorAll('.hud-tab-btn').forEach(b => {
+            b.className = b === btn
+              ? 'hud-tab-btn py-2.5 px-2 border-b-2 border-sky-500 text-sky-300 bg-slate-900/60'
+              : 'hud-tab-btn py-2.5 px-2 border-b-2 border-transparent text-slate-400 hover:text-slate-200';
+          });
+          document.getElementById('tabPanelInspector').classList.toggle('hidden', tab !== 'inspector');
+          document.getElementById('tabPanelSubpermits').classList.toggle('hidden', tab !== 'subpermits');
+          document.getElementById('tabPanelSubmittals').classList.toggle('hidden', tab !== 'submittals');
+          document.getElementById('tabPanelInspections').classList.toggle('hidden', tab !== 'inspections');
+        });
+      });
+
+      // Export JSON Modal
+      document.getElementById('btnExportJson').addEventListener('click', () => {
+        const packet = evaluateUnifiedRoutingPacket();
+        document.getElementById('jsonModalContent').textContent = JSON.stringify(packet, null, 2);
+        document.getElementById('copyFeedbackMsg').textContent = '';
+        document.getElementById('jsonModal').classList.remove('hidden');
+      });
+      document.getElementById('btnCloseJsonModal').addEventListener('click', () => {
+        document.getElementById('jsonModal').classList.add('hidden');
+      });
+      document.getElementById('btnCopyJson').addEventListener('click', () => {
+        const text = document.getElementById('jsonModalContent').textContent;
+        const tempArea = document.createElement('textarea');
+        tempArea.value = text;
+        document.body.appendChild(tempArea);
+        tempArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempArea);
+        document.getElementById('copyFeedbackMsg').textContent = 'Copied routing packet JSON to clipboard!';
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initUIControls();
+      init3DScene();
+      applyPreset('new_house_full');
     });
-
-    // HUD Parameter Selectors
-    document.getElementById('param-building').addEventListener('change', (e) => {
-      state.buildingType = e.target.value;
-      syncParamControlsFromState();
-      rebuildSceneGeometry();
-      renderHUD();
-      applyCameraPreset('overview');
-    });
-
-    document.getElementById('param-action').addEventListener('change', (e) => {
-      state.actionType = e.target.value;
-      renderHUD();
-    });
-
-    document.getElementById('param-fuel').addEventListener('change', (e) => {
-      state.fuelSource = e.target.value;
-      renderHUD();
-    });
-
-    document.getElementById('param-placement').addEventListener('change', (e) => {
-      state.placement = e.target.value;
-      renderHUD();
-    });
-
-    window.addEventListener('resize', resizeViewport);
-
-    // Boot
-    initWebGL();
-    syncParamControlsFromState();
-    renderEquipmentChips();
-    rebuildSceneGeometry();
-    renderHUD();
-    resizeViewport();
-    animate();
   </script>
 </body>
 </html>
