@@ -1,0 +1,1575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HR Building Permits Generator — City of Chesapeake 3D Mechanical Permit Visualizer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #070d19;
+      color: #f8fafc;
+      overflow-x: hidden;
+    }
+    #viewport-container {
+      position: relative;
+      width: 100%;
+      height: 520px;
+      min-height: 400px;
+      border-radius: 0.75rem;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 25%, #16243d 0%, #09101f 100%);
+    }
+    @media (min-width: 1024px) {
+      #viewport-container {
+        height: 650px;
+      }
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+    }
+    .callout-label {
+      position: absolute;
+      transform: translate(-50%, -120%);
+      pointer-events: auto;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: transform 0.12s ease, background-color 0.15s ease, border-color 0.15s ease;
+      user-select: none;
+    }
+    .callout-label:hover {
+      transform: translate(-50%, -125%) scale(1.04);
+      z-index: 30;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.55);
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.35);
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-slate-950 text-slate-100">
+  <!-- Top Header -->
+  <header class="border-b border-slate-800/90 bg-slate-900/95 backdrop-blur px-4 py-3 sm:px-6">
+    <div class="max-w-[1440px] mx-auto flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+      <div class="flex items-center gap-3">
+        <div class="h-10 w-10 rounded-xl bg-sky-500/15 border border-sky-400/40 flex flex-col items-center justify-center text-sky-300 font-extrabold text-xs leading-tight shrink-0">
+          <span>HR</span>
+          <span class="text-[9px] text-amber-300">CHES</span>
+        </div>
+        <div>
+          <div class="flex flex-wrap items-center gap-2">
+            <h1 class="text-sm sm:text-base lg:text-lg font-bold tracking-tight text-white">
+              HR Building Permits Generator — City of Chesapeake 3D Mechanical Permit Visualizer
+            </h1>
+            <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-400/30">
+              eBUILD • VA USBC / VCC
+            </span>
+          </div>
+          <p class="text-xs text-slate-400">
+            Dept. of Development &amp; Permits • IMC / IRC Ch. 12–23 • IFGC • IECC • IFC • NFPA 70 • IZC Ch. 8
+          </p>
+        </div>
+      </div>
+
+      <!-- Building Archetype Quick Switcher -->
+      <div class="flex flex-wrap items-center gap-2 text-xs">
+        <span class="text-slate-400 font-medium">Structure Model:</span>
+        <div class="inline-flex rounded-lg bg-slate-950 p-1 border border-slate-800">
+          <button id="btn-bldg-res" class="bldg-btn px-3 py-1.5 rounded-md font-semibold bg-sky-500 text-slate-950 transition">
+            Residential (IRC 1-/2-Fam)
+          </button>
+          <button id="btn-bldg-com" class="bldg-btn px-3 py-1.5 rounded-md font-medium text-slate-300 hover:text-white transition">
+            Commercial (IBC / IMC)
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="flex-1 max-w-[1440px] w-full mx-auto p-4 sm:p-5 grid grid-cols-1 lg:grid-cols-12 gap-5">
+    <!-- Left Column: 3D Interactive Viewport + Equipment Chips + Camera Controls -->
+    <section class="lg:col-span-7 flex flex-col gap-3.5">
+      <!-- Clickable Mechanical Equipment Selector Bar -->
+      <div class="bg-slate-900/85 border border-slate-800 rounded-xl p-3">
+        <div class="flex items-center justify-between gap-2 mb-2">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            Clickable 3D Mechanical Equipment Nodes (Select in 3D or Below)
+          </span>
+          <span id="active-bldg-badge" class="text-[11px] font-semibold text-sky-300">
+            Active: Residential IRC Dwelling
+          </span>
+        </div>
+        <div id="equipment-chips" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
+      </div>
+
+      <!-- 3D Viewport Card -->
+      <div class="bg-slate-900/85 border border-slate-800 rounded-xl p-3 flex flex-col gap-3">
+        <!-- Toolbar: View Modes + Labels Toggle -->
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex flex-wrap items-center gap-1.5">
+            <span class="text-xs font-semibold text-slate-400 mr-1">View Mode:</span>
+            <button data-mode="cutaway" class="mode-btn px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-sky-500 text-slate-950 transition">
+              Cutaway / X-Ray Walls
+            </button>
+            <button data-mode="solid" class="mode-btn px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-200 hover:bg-slate-700 transition">
+              Solid Exterior
+            </button>
+            <button data-mode="discipline" class="mode-btn px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-200 hover:bg-slate-700 transition">
+              Discipline Color-Coding
+            </button>
+          </div>
+
+          <button id="toggle-labels-btn" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 border border-slate-700 text-sky-300 hover:bg-slate-700 transition">
+            3D Callout Labels: ON
+          </button>
+        </div>
+
+        <!-- Camera Presets Bar -->
+        <div class="flex flex-wrap items-center gap-1.5">
+          <span class="text-xs font-semibold text-slate-400 mr-1">Camera Presets:</span>
+          <button data-cam="overview" class="cam-btn px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-800 border border-slate-700 text-slate-200 hover:bg-slate-700 transition">
+            Overview
+          </button>
+          <button data-cam="rooftop" class="cam-btn px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-800 border border-slate-700 text-slate-200 hover:bg-slate-700 transition">
+            Rooftop / Exterior
+          </button>
+          <button data-cam="mechroom" class="cam-btn px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-800 border border-slate-700 text-slate-200 hover:bg-slate-700 transition">
+            Interior Mech Room
+          </button>
+          <button data-cam="ductvent" class="cam-btn px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-800 border border-slate-700 text-slate-200 hover:bg-slate-700 transition">
+            Duct &amp; Venting
+          </button>
+          <button data-cam="reset" class="cam-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 border border-sky-500/40 text-sky-300 hover:bg-slate-700 transition ml-auto">
+            Reset Orbit
+          </button>
+        </div>
+
+        <!-- 3D / 2D Fallback Canvas Wrapper -->
+        <div id="viewport-container" class="border border-slate-800 shadow-inner">
+          <canvas id="render-canvas"></canvas>
+          <div id="labels-overlay" class="absolute inset-0 pointer-events-none overflow-hidden"></div>
+
+          <!-- Discipline Color Legend -->
+          <div class="pointer-events-none absolute bottom-3 left-3 right-3 bg-slate-950/85 backdrop-blur border border-slate-800 rounded-lg px-3 py-2 text-[11px] text-slate-300 flex flex-wrap items-center justify-between gap-2">
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-sky-400"></span>Mechanical (IMC/IRC)</span>
+              <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>Fuel Gas (IFGC)</span>
+              <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-yellow-300"></span>Electrical (NFPA 70)</span>
+              <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>Zoning/Site (IZC)</span>
+              <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>Fire (IFC)</span>
+              <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-purple-400"></span>Energy (IECC)</span>
+            </div>
+            <span id="renderer-mode-tag" class="text-[10px] font-semibold text-slate-400">
+              WebGL 3D • Click Node / Drag Orbit
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Column: Interactive Chesapeake / VA USBC / VCC Permit Rules Evaluator HUD -->
+    <aside class="lg:col-span-5 bg-slate-900/90 border border-slate-800 rounded-xl p-4 sm:p-5 flex flex-col gap-4 custom-scroll lg:max-h-[840px] lg:overflow-y-auto">
+      <!-- Interactive Parameter Overrides -->
+      <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5">
+        <div class="flex items-center justify-between mb-2.5">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-sky-300">
+            Chesapeake / VA USBC Rule Parameters
+          </h2>
+          <span class="text-[11px] text-slate-400">Live Evaluator</span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+          <div>
+            <label for="param-building" class="block text-[11px] font-medium text-slate-400 mb-1">Building Type</label>
+            <select id="param-building" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-slate-100 focus:outline-none focus:border-sky-400">
+              <option value="residential">Residential (IRC 1-/2-Fam)</option>
+              <option value="commercial">Commercial (IBC / IMC)</option>
+            </select>
+          </div>
+          <div>
+            <label for="param-action" class="block text-[11px] font-medium text-slate-400 mb-1">Action Type</label>
+            <select id="param-action" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-slate-100 focus:outline-none focus:border-sky-400">
+              <option value="new_install">New Install</option>
+              <option value="replacement_like_for_like">Like-for-Like Replacement</option>
+              <option value="alteration">Alteration / Upgrade</option>
+            </select>
+          </div>
+          <div>
+            <label for="param-fuel" class="block text-[11px] font-medium text-slate-400 mb-1">Fuel / Energy Source</label>
+            <select id="param-fuel" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-slate-100 focus:outline-none focus:border-sky-400">
+              <option value="electric">Electric / Heat Pump</option>
+              <option value="natural_gas">Natural Gas / Propane</option>
+            </select>
+          </div>
+          <div>
+            <label for="param-placement" class="block text-[11px] font-medium text-slate-400 mb-1">Equipment Placement</label>
+            <select id="param-placement" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-slate-100 focus:outline-none focus:border-sky-400">
+              <option value="exterior_rooftop">Exterior Grade / Rooftop</option>
+              <option value="interior_mech">Interior / Attic / Mech Room</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dynamic Rule Output Container -->
+      <div id="hud-output" class="flex flex-col gap-4"></div>
+    </aside>
+  </main>
+
+  <!-- Non-blocking Toast Banner -->
+  <div id="toast-banner" class="hidden fixed bottom-4 right-4 z-50 max-w-sm bg-slate-800 border border-sky-400/40 text-slate-100 text-xs rounded-xl px-4 py-2.5 shadow-2xl"></div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    // =========================================================================
+    // 1. CHESAPEAKE / VA USBC / VCC MECHANICAL EQUIPMENT CATALOG & RULE DATA
+    // =========================================================================
+    const DISCIPLINE_META = {
+      mechanical: { label: 'Mechanical (IMC / IRC)', hex: '#38bdf8', badge: 'bg-sky-500/15 text-sky-300 border-sky-400/30' },
+      fuel_gas:   { label: 'Fuel Gas (IFGC)',        hex: '#fbbf24', badge: 'bg-amber-500/15 text-amber-300 border-amber-400/30' },
+      electrical: { label: 'Electrical (NFPA 70)',   hex: '#fde047', badge: 'bg-yellow-500/15 text-yellow-200 border-yellow-400/30' },
+      zoning_sign:{ label: 'Zoning / Site (IZC)',    hex: '#34d399', badge: 'bg-emerald-500/15 text-emerald-300 border-emerald-400/30' },
+      fire:       { label: 'Fire (IFC)',             hex: '#f43f5e', badge: 'bg-rose-500/15 text-rose-300 border-rose-400/30' },
+      energy:     { label: 'Energy (IECC)',          hex: '#c084fc', badge: 'bg-purple-500/15 text-purple-300 border-purple-400/30' }
+    };
+
+    const EQUIPMENT_NODES = [
+      {
+        id: 'condenser_rtu',
+        name: 'Rooftop / Exterior Heat Pump Condenser',
+        shortName: 'Heat Pump / RTU',
+        categoryCode: 'hvac_units',
+        primaryDiscipline: 'mechanical',
+        secondaryDiscipline: 'zoning_sign',
+        defaultFuel: 'electric',
+        defaultPlacement: 'exterior_rooftop',
+        eligibleElectricSwap: true,
+        fireTriggerCommercial: false,
+        energyTrigger: true,
+        ventCertBase: false,
+        imcChapters: 'IMC Ch. 3, 9 & 11',
+        ircChapters: 'IRC Ch. 12–23 (Ch. 14 Heating/Cooling)',
+        submittals: [
+          { code: 'MECH_HVAC_SCHED', title: 'HVAC Equipment Schedules & Cut Sheets (SEER2 / HSPF2)' },
+          { code: 'IECC_HVAC_LOAD', title: 'Manual J/S or IECC Heating & Cooling Load Calculations' }
+        ],
+        milestones: [
+          { seq: 20, name: 'Rough Mechanical, Pad & Refrigerant Line Set Check' },
+          { seq: 45, name: 'HVAC Operational, Defrost & IECC Efficiency Verification' },
+          { seq: 90, name: 'Final Mechanical Inspection (VA USBC / VCC Ch. 1)' }
+        ]
+      },
+      {
+        id: 'furnace_ahu',
+        name: 'Gas Furnace / Air Handler',
+        shortName: 'Furnace / AHU',
+        categoryCode: 'hvac_units',
+        primaryDiscipline: 'mechanical',
+        secondaryDiscipline: 'fuel_gas',
+        defaultFuel: 'natural_gas',
+        defaultPlacement: 'interior_mech',
+        eligibleElectricSwap: true,
+        fireTriggerCommercial: false,
+        energyTrigger: true,
+        ventCertBase: false,
+        imcChapters: 'IMC Ch. 3, 7, 8 & 9',
+        ircChapters: 'IRC Ch. 12–23 (Ch. 14, 17 & 18)',
+        submittals: [
+          { code: 'MECH_FURN_SCHED', title: 'Furnace / AHU Cut Sheets, AFUE & Clearances to Combustibles' },
+          { code: 'IECC_LOAD_CALC', title: 'Heating/Cooling Load & IECC Thermal Efficiency Compliance' }
+        ],
+        milestones: [
+          { seq: 20, name: 'Rough Mechanical, Condensate & Clearance Inspection' },
+          { seq: 45, name: 'Gas Piping Leak Test & Combustion / Safety Control Check' },
+          { seq: 90, name: 'Final Mechanical Inspection (VA USBC / VCC Ch. 1)' }
+        ]
+      },
+      {
+        id: 'ductwork',
+        name: 'Supply / Return Ductwork',
+        shortName: 'Supply/Return Ducts',
+        categoryCode: 'ductwork',
+        primaryDiscipline: 'mechanical',
+        secondaryDiscipline: 'energy',
+        defaultFuel: 'electric',
+        defaultPlacement: 'interior_mech',
+        eligibleElectricSwap: false,
+        fireTriggerCommercial: true,
+        energyTrigger: true,
+        ventCertBase: false,
+        imcChapters: 'IMC Ch. 6 (Duct Systems)',
+        ircChapters: 'IRC Ch. 12–23 (Ch. 16 Duct Systems)',
+        submittals: [
+          { code: 'MECH_DUCT_LAYOUT', title: 'Duct Layout, Manual D Sizing & IECC Insulation/Sealing Specs' },
+          { code: 'MECH_FIRE_DAMPER', title: 'Fire/Smoke Damper & Duct Smoke Detector Locations (Commercial)' }
+        ],
+        milestones: [
+          { seq: 20, name: 'Pre-Concealment Rough-In Duct, Plenum & Damper Inspection' },
+          { seq: 45, name: 'IECC Duct Leakage & Insulation R-Value Verification' },
+          { seq: 90, name: 'Final Air Distribution & Balancing Sign-Off' }
+        ]
+      },
+      {
+        id: 'water_heater',
+        name: 'Tankless / Gas Water Heater',
+        shortName: 'Gas Water Heater',
+        categoryCode: 'boilers_vessels',
+        primaryDiscipline: 'fuel_gas',
+        secondaryDiscipline: 'mechanical',
+        defaultFuel: 'natural_gas',
+        defaultPlacement: 'interior_mech',
+        eligibleElectricSwap: false,
+        fireTriggerCommercial: false,
+        energyTrigger: true,
+        ventCertBase: true,
+        imcChapters: 'IMC Ch. 8 & 10 / IPC Ch. 5',
+        ircChapters: 'IRC Ch. 12–23 & Ch. 28 (Water Heaters)',
+        submittals: [
+          { code: 'MECH_WH_SPEC', title: 'Water Heater Specs, T&P Relief Discharge, Pan & Expansion Tank' },
+          { code: 'IECC_WH_EFF', title: 'Water Heating UEF Efficiency & Pipe Insulation Compliance' }
+        ],
+        milestones: [
+          { seq: 25, name: 'Rough Water Heater Piping, Gas Line & Venting Check' },
+          { seq: 50, name: 'Gas Pressure Test & T&P Relief Safety Check' },
+          { seq: 90, name: 'Final Water Heater / Mechanical Sign-Off' }
+        ]
+      },
+      {
+        id: 'kitchen_hood',
+        name: 'Type I Commercial Kitchen Exhaust Hood',
+        shortName: 'Type I Grease Hood',
+        categoryCode: 'exhaust_specialty',
+        primaryDiscipline: 'fire',
+        secondaryDiscipline: 'mechanical',
+        defaultFuel: 'natural_gas',
+        defaultPlacement: 'interior_mech',
+        eligibleElectricSwap: false,
+        fireTriggerCommercial: true,
+        energyTrigger: true,
+        ventCertBase: true,
+        imcChapters: 'IMC Ch. 5 (Sec. 506–509 Commercial Kitchen Hoods)',
+        ircChapters: 'IRC Ch. 15 (Exhaust — Commercial Hoods Governed by IMC/IFC)',
+        submittals: [
+          { code: 'MECH_TYPE1_HOOD', title: 'Type I Grease Hood, Welded Duct, Shaft & Makeup Air Plans' },
+          { code: 'IFC_UL300_SUPP', title: 'UL 300 Hood Fire Suppression & Fire Alarm Interlock Submittal' }
+        ],
+        milestones: [
+          { seq: 20, name: 'Concealed Grease Duct Weld / Enclosure & Clearance Inspection' },
+          { seq: 45, name: 'Grease Duct Light / Water Leakage & Makeup Air Balance Test' },
+          { seq: 55, name: 'UL 300 Hood Suppression & Shunt-Trip Fire Interlock Test' },
+          { seq: 90, name: 'Final Mechanical & Fire Prevention Sign-Off' }
+        ]
+      },
+      {
+        id: 'boiler_hydronic',
+        name: 'Boiler / Hydronic Loop',
+        shortName: 'Boiler & Hydronic',
+        categoryCode: 'boilers_vessels',
+        primaryDiscipline: 'mechanical',
+        secondaryDiscipline: 'energy',
+        defaultFuel: 'natural_gas',
+        defaultPlacement: 'interior_mech',
+        eligibleElectricSwap: false,
+        fireTriggerCommercial: false,
+        energyTrigger: true,
+        ventCertBase: true,
+        imcChapters: 'IMC Ch. 10 (Boilers) & Ch. 12 (Hydronic Piping)',
+        ircChapters: 'IRC Ch. 12–23 (Ch. 20 Boilers & Ch. 21 Hydronic Piping)',
+        submittals: [
+          { code: 'MECH_BOILER_HYD', title: 'Boiler Schedule, Expansion Tank, LWCO & Hydronic Piping Schematic' },
+          { code: 'IECC_HYD_INSUL', title: 'Hydronic Piping Insulation & Boiler Thermal Efficiency Data' }
+        ],
+        milestones: [
+          { seq: 25, name: 'Rough Hydronic Piping, Relief Valve & Expansion Tank Check' },
+          { seq: 50, name: 'Hydrostatic Pressure Test & Low-Water Cutoff Safety Test' },
+          { seq: 90, name: 'Final Boiler & Hydronic Mechanical Inspection' }
+        ]
+      },
+      {
+        id: 'chimney_vent',
+        name: 'Chimney / Vent Stack & Combustion Air',
+        shortName: 'Chimney & Comb. Air',
+        categoryCode: 'chimneys_vents',
+        primaryDiscipline: 'fuel_gas',
+        secondaryDiscipline: 'zoning_sign',
+        defaultFuel: 'natural_gas',
+        defaultPlacement: 'exterior_rooftop',
+        eligibleElectricSwap: false,
+        fireTriggerCommercial: false,
+        energyTrigger: false,
+        ventCertBase: true,
+        imcChapters: 'IMC Ch. 7 (Combustion Air) & Ch. 8 (Chimneys & Vents)',
+        ircChapters: 'IRC Ch. 12–23 (Ch. 17 Combustion Air & Ch. 18 Chimneys/Vents)',
+        submittals: [
+          { code: 'MECH_VENT_TERM', title: 'Chimney / Flue Sizing & Roof/Wall Termination Clearance Drawing' },
+          { code: 'MECH_COMB_AIR', title: 'Combustion Air Opening / Duct Sizing Calculations (IFGC / IMC)' }
+        ],
+        milestones: [
+          { seq: 20, name: 'Pre-Enclosure Chimney / Vent & Combustion Air Rough-In Check' },
+          { seq: 45, name: 'Draft, Flue Gas Spillage & Power Exhauster Operational Test' },
+          { seq: 90, name: 'Final Venting & Combustion Air Sign-Off' }
+        ]
+      }
+    ];
+
+    // =========================================================================
+    // 2. APPLICATION STATE
+    // =========================================================================
+    const state = {
+      buildingType: 'residential', // 'residential' | 'commercial'
+      selectedEquipId: 'condenser_rtu',
+      actionType: 'new_install', // 'new_install' | 'replacement_like_for_like' | 'alteration'
+      fuelSource: 'electric', // 'electric' | 'natural_gas'
+      placement: 'exterior_rooftop', // 'exterior_rooftop' | 'interior_mech'
+      viewMode: 'cutaway', // 'cutaway' | 'solid' | 'discipline'
+      showLabels: true
+    };
+
+    const toastEl = document.getElementById('toast-banner');
+    function showToast(msg) {
+      toastEl.textContent = msg;
+      toastEl.classList.remove('hidden');
+      clearTimeout(showToast._timer);
+      showToast._timer = setTimeout(() => toastEl.classList.add('hidden'), 2800);
+    }
+
+    // =========================================================================
+    // 3. CHESAPEAKE / VA USBC / VCC PERMIT RULES EVALUATOR
+    // =========================================================================
+    function evaluateChesapeakeRules() {
+      const eq = EQUIPMENT_NODES.find((e) => e.id === state.selectedEquipId) || EQUIPMENT_NODES[0];
+      const isCommercial = state.buildingType === 'commercial';
+      const isExteriorOrRoof = state.placement === 'exterior_rooftop';
+      const isGas = state.fuelSource === 'natural_gas';
+      const isLikeForLike = state.actionType === 'replacement_like_for_like';
+
+      // Chesapeake Q1 Rule:
+      // Same-for-same gas/oil requires permit; eligible interior electric HVAC swap may qualify for exemption.
+      let permitRequired = true;
+      let statusBadge = 'PERMIT REQUIRED';
+      let statusSummary = 'Requires a Mechanical Permit filed via City of Chesapeake eBUILD under Virginia USBC / VCC.';
+      let isExempt = false;
+
+      if (isLikeForLike) {
+        if (isGas) {
+          permitRequired = true;
+          statusBadge = 'PERMIT REQUIRED (Chesapeake Gas Swap Rule)';
+          statusSummary = 'Chesapeake Q1 Rule: Same-for-same natural gas or propane appliance/equipment replacement requires a mechanical/gas permit.';
+        } else if (!isGas && eq.eligibleElectricSwap && !isExteriorOrRoof && !isCommercial) {
+          permitRequired = false;
+          isExempt = true;
+          statusBadge = 'ELIGIBLE EXEMPTION (Verify Local Scope)';
+          statusSummary = 'Chesapeake Q1 Rule: Eligible interior residential like-for-like electric HVAC replacement (verify no duct, circuit, or exterior pad changes).';
+        }
+      }
+
+      // Commercial Kitchen Type I Hood always governed by IMC / IFC
+      const forceCommercialCode = isCommercial || eq.id === 'kitchen_hood';
+      const governingCode = forceCommercialCode ? 'IMC + IBC / VA USBC' : 'IRC Ch. 12–23 + VA USBC';
+      const governingChapters = forceCommercialCode ? eq.imcChapters : eq.ircChapters;
+
+      // RDP Seal Required Flag (USBC / VCC Ch. 1)
+      const rdpSealRequired = permitRequired && forceCommercialCode;
+
+      // Exterior Site Plan Gate (CHES_EXT_SITE_PLAN / IZC Ch. 8)
+      const sitePlanRequired = permitRequired && isExteriorOrRoof;
+
+      // Companion Sub-Permits
+      const subPermits = [];
+      if (permitRequired) {
+        subPermits.push('mechanical');
+        if (isGas) subPermits.push('fuel_gas');
+        subPermits.push('electrical');
+        if (sitePlanRequired) subPermits.push('zoning_sign');
+        if (eq.fireTriggerCommercial && forceCommercialCode) subPermits.push('fire');
+        if (eq.energyTrigger) subPermits.push('energy');
+      }
+
+      // Submittal Checklist
+      const submittals = [];
+      if (permitRequired) {
+        if (sitePlanRequired) {
+          submittals.push({
+            code: 'CHES_EXT_SITE_PLAN',
+            title: 'Exterior / Rooftop Mechanical Site Plan (IZC Ch. 8 Setbacks, Screening & CBPA Check)',
+            highlight: true
+          });
+        }
+        if (rdpSealRequired) {
+          submittals.push({
+            code: 'VCC_RDP_SEAL',
+            title: 'Virginia Registered Design Professional (RDP) Seal & Signature (USBC / VCC Ch. 1)',
+            highlight: true
+          });
+        }
+        eq.submittals.forEach((s) => submittals.push({ ...s, highlight: false }));
+      }
+
+      // Inspection Milestones + Chesapeake Chimney / Vent Certification Gate
+      const milestones = [];
+      const ventCertRequired = permitRequired && (eq.ventCertBase || isGas);
+      if (permitRequired) {
+        eq.milestones.forEach((m) => {
+          if (m.seq === 90 && ventCertRequired) {
+            milestones.push({
+              seq: 85,
+              name: 'Chesapeake Chimney / Vent Certification Gate (Mandatory Pre-Final Hold)',
+              isVentGate: true
+            });
+          }
+          milestones.push({ ...m, isVentGate: false });
+        });
+      }
+
+      return {
+        eq,
+        permitRequired,
+        isExempt,
+        statusBadge,
+        statusSummary,
+        governingCode,
+        governingChapters,
+        rdpSealRequired,
+        sitePlanRequired,
+        ventCertRequired,
+        subPermits,
+        submittals,
+        milestones
+      };
+    }
+
+    // =========================================================================
+    // 4. HUD & UI RENDERING
+    // =========================================================================
+    function renderEquipmentChips() {
+      const container = document.getElementById('equipment-chips');
+      container.innerHTML = EQUIPMENT_NODES.map((eq) => {
+        const selected = eq.id === state.selectedEquipId;
+        const discColor = DISCIPLINE_META[eq.primaryDiscipline].hex;
+        return `
+          <button
+            data-equip="${eq.id}"
+            class="equip-chip text-left px-2.5 py-2 rounded-lg border text-xs transition flex items-center gap-2 ${
+              selected
+                ? 'bg-sky-500/20 border-sky-400 text-white font-semibold shadow-sm'
+                : 'bg-slate-950/70 border-slate-800 text-slate-300 hover:border-slate-700 hover:bg-slate-800/80'
+            }"
+          >
+            <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:${discColor}"></span>
+            <span class="truncate">${eq.shortName}</span>
+          </button>
+        `;
+      }).join('');
+
+      document.querySelectorAll('.equip-chip').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          selectEquipment(btn.dataset.equip, true);
+        });
+      });
+    }
+
+    function renderHUD() {
+      const res = evaluateChesapeakeRules();
+      const hud = document.getElementById('hud-output');
+
+      const statusBoxClass = res.isExempt
+        ? 'bg-emerald-500/12 border-emerald-400/40 text-emerald-200'
+        : 'bg-rose-500/12 border-rose-400/40 text-rose-100';
+
+      const statusPillClass = res.isExempt
+        ? 'bg-emerald-500 text-slate-950'
+        : 'bg-rose-500 text-white';
+
+      hud.innerHTML = `
+        <!-- Selected Equipment Header & Permit Status -->
+        <div class="rounded-xl border p-3.5 ${statusBoxClass}">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+            <span class="text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full ${statusPillClass}">
+              ${res.statusBadge}
+            </span>
+            <span class="text-[11px] font-mono text-slate-300">${res.eq.categoryCode}</span>
+          </div>
+          <h3 class="text-base font-bold text-white">${res.eq.name}</h3>
+          <p class="text-xs mt-1 leading-relaxed opacity-95">${res.statusSummary}</p>
+        </div>
+
+        <!-- Core Regulatory Flags Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+          <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3">
+            <div class="text-[11px] text-slate-400 font-medium">Governing Code &amp; Chapters</div>
+            <div class="font-bold text-sky-300 mt-0.5">${res.governingCode}</div>
+            <div class="text-[11px] text-slate-300 mt-0.5">${res.governingChapters}</div>
+          </div>
+
+          <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3">
+            <div class="text-[11px] text-slate-400 font-medium">RDP Seal (USBC / VCC Ch. 1)</div>
+            <div class="font-bold mt-0.5 ${res.rdpSealRequired ? 'text-amber-300' : 'text-slate-300'}">
+              ${res.rdpSealRequired ? 'REQUIRED — Seal & Sign Plans' : 'Not Required (Standard Path)'}
+            </div>
+            <div class="text-[11px] text-slate-400 mt-0.5">
+              ${res.rdpSealRequired ? 'Commercial / IMC / Life-Safety Threshold' : 'Prescriptive IRC Residential Scope'}
+            </div>
+          </div>
+
+          <div class="sm:col-span-2 bg-slate-950/80 border ${
+            res.sitePlanRequired ? 'border-emerald-500/40' : 'border-slate-800'
+          } rounded-xl p-3 flex items-center justify-between gap-3">
+            <div>
+              <div class="text-[11px] text-slate-400 font-medium">Exterior Site Plan Gate (CHES_EXT_SITE_PLAN / IZC Ch. 8)</div>
+              <div class="font-bold mt-0.5 ${res.sitePlanRequired ? 'text-emerald-300' : 'text-slate-300'}">
+                ${
+                  res.sitePlanRequired
+                    ? 'TRIGGERED — Exterior / Rooftop Setbacks, Screening & CBPA Check'
+                    : 'Not Triggered (Interior / Enclosed Equipment Placement)'
+                }
+              </div>
+            </div>
+            <span class="text-[11px] font-bold px-2.5 py-1 rounded-lg shrink-0 ${
+              res.sitePlanRequired
+                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/40'
+                : 'bg-slate-800 text-slate-400'
+            }">
+              ${res.sitePlanRequired ? 'GATE ACTIVE' : 'BYPASSED'}
+            </span>
+          </div>
+        </div>
+
+        <!-- Companion Sub-Permits -->
+        <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5">
+          <div class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+            Triggered Primary &amp; Companion Sub-Permits
+          </div>
+          <div class="flex flex-wrap gap-1.5">
+            ${
+              res.subPermits.length > 0
+                ? res.subPermits
+                    .map((code) => {
+                      const meta = DISCIPLINE_META[code];
+                      return `<span class="text-xs font-semibold px-2.5 py-1 rounded-lg border ${meta.badge}">${meta.label}</span>`;
+                    })
+                    .join('')
+                : `<span class="text-xs text-emerald-300 font-medium">No sub-permits required under Chesapeake like-for-like electric exemption.</span>`
+            }
+          </div>
+        </div>
+
+        <!-- Required Submittal Checklist -->
+        <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5">
+          <div class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+            Required Submittal Checklist (eBUILD Upload)
+          </div>
+          ${
+            res.submittals.length > 0
+              ? `<ul class="space-y-2 text-xs">
+                  ${res.submittals
+                    .map(
+                      (s) => `
+                    <li class="p-2.5 rounded-lg border ${
+                      s.highlight
+                        ? 'bg-sky-500/10 border-sky-400/40 text-sky-100'
+                        : 'bg-slate-900/90 border-slate-800 text-slate-200'
+                    }">
+                      <div class="font-mono text-[10px] text-slate-400">${s.code}</div>
+                      <div class="font-medium mt-0.5">${s.title}</div>
+                    </li>`
+                    )
+                    .join('')}
+                </ul>`
+              : `<p class="text-xs text-slate-400">No submittal package required when exempt scope is verified.</p>`
+          }
+        </div>
+
+        <!-- Ordered Inspection Milestones -->
+        <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5">
+          <div class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+            Ordered Inspection Milestones &amp; Certification Gates
+          </div>
+          ${
+            res.milestones.length > 0
+              ? `<ol class="space-y-2 text-xs">
+                  ${res.milestones
+                    .map(
+                      (m, idx) => `
+                    <li class="p-2.5 rounded-lg border flex items-start gap-2.5 ${
+                      m.isVentGate
+                        ? 'bg-amber-500/15 border-amber-400/50 text-amber-100'
+                        : 'bg-slate-900/90 border-slate-800 text-slate-200'
+                    }">
+                      <span class="px-2 py-0.5 rounded font-bold text-[10px] shrink-0 ${
+                        m.isVentGate ? 'bg-amber-400 text-slate-950' : 'bg-slate-800 text-sky-300'
+                      }">
+                        #${idx + 1}
+                      </span>
+                      <div>
+                        <div class="font-semibold">${m.name}</div>
+                        ${
+                          m.isVentGate
+                            ? `<div class="text-[11px] text-amber-300 mt-0.5">Blocks Final Inspection until Chimney/Vent Certification is filed with Mechanical Division.</div>`
+                            : ''
+                        }
+                      </div>
+                    </li>`
+                    )
+                    .join('')}
+                </ol>`
+              : `<p class="text-xs text-slate-400">No field inspections scheduled for exempt swap.</p>`
+          }
+        </div>
+      `;
+    }
+
+    function syncParamControlsFromState() {
+      document.getElementById('param-building').value = state.buildingType;
+      document.getElementById('param-action').value = state.actionType;
+      document.getElementById('param-fuel').value = state.fuelSource;
+      document.getElementById('param-placement').value = state.placement;
+
+      const resBtn = document.getElementById('btn-bldg-res');
+      const comBtn = document.getElementById('btn-bldg-com');
+      const badge = document.getElementById('active-bldg-badge');
+      if (state.buildingType === 'residential') {
+        resBtn.className = 'bldg-btn px-3 py-1.5 rounded-md font-semibold bg-sky-500 text-slate-950 transition';
+        comBtn.className = 'bldg-btn px-3 py-1.5 rounded-md font-medium text-slate-300 hover:text-white transition';
+        badge.textContent = 'Active: Residential IRC Dwelling';
+      } else {
+        comBtn.className = 'bldg-btn px-3 py-1.5 rounded-md font-semibold bg-sky-500 text-slate-950 transition';
+        resBtn.className = 'bldg-btn px-3 py-1.5 rounded-md font-medium text-slate-300 hover:text-white transition';
+        badge.textContent = 'Active: Commercial IBC / IMC Building';
+      }
+    }
+
+    function selectEquipment(equipId, applyDefaults = true) {
+      state.selectedEquipId = equipId;
+      const eq = EQUIPMENT_NODES.find((e) => e.id === equipId);
+      if (eq && applyDefaults) {
+        state.fuelSource = eq.defaultFuel;
+        state.placement = eq.defaultPlacement;
+        if (eq.id === 'kitchen_hood' && state.buildingType === 'residential') {
+          state.buildingType = 'commercial';
+          rebuildSceneGeometry();
+        }
+      }
+      syncParamControlsFromState();
+      renderEquipmentChips();
+      renderHUD();
+      updateEquipmentHighlights();
+      if (eq) showToast(`Selected: ${eq.name}`);
+    }
+
+    // =========================================================================
+    // 5. THREE.JS 3D SCENE + 2D ISOMETRIC CANVAS FALLBACK
+    // =========================================================================
+    const viewport = document.getElementById('viewport-container');
+    const canvas = document.getElementById('render-canvas');
+    const labelsOverlay = document.getElementById('labels-overlay');
+    const rendererModeTag = document.getElementById('renderer-mode-tag');
+
+    let renderer = null;
+    let scene = null;
+    let camera = null;
+    let controls = null;
+    let webglOk = true;
+
+    let structureGroup = null;
+    let equipmentGroup = null;
+    let shellItems = []; // { mesh, part, baseMat }
+    let equipNodeEntries = []; // { id, group, meshes: [{ mesh, baseHex, primaryDisc, secondaryDisc }], anchor: THREE.Vector3, iso2D: {x, y} }
+
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+    let pointerDownPos = { x: 0, y: 0 };
+
+    // Camera smooth transition target
+    let camAnim = null;
+
+    const CAMERA_PRESETS = {
+      residential: {
+        overview: { pos: [12.5, 9.2, 13.5], target: [0.0, 2.2, 0.0] },
+        rooftop:  { pos: [10.0, 8.2, 7.5],  target: [2.8, 3.0, 0.0] },
+        mechroom: { pos: [5.5, 4.2, 6.2],   target: [-1.4, 1.5, -0.8] },
+        ductvent: { pos: [7.8, 7.8, 7.2],   target: [0.0, 4.4, -0.5] }
+      },
+      commercial: {
+        overview: { pos: [15.5, 11.0, 16.0], target: [0.0, 2.8, 0.0] },
+        rooftop:  { pos: [11.5, 10.5, 9.5],  target: [1.0, 5.4, 0.0] },
+        mechroom: { pos: [7.2, 4.5, 8.2],    target: [-1.8, 1.8, -0.8] },
+        ductvent: { pos: [9.5, 7.2, 8.5],    target: [0.5, 3.8, -0.4] }
+      }
+    };
+
+    function applyCameraPreset(presetName) {
+      const bKey = state.buildingType;
+      const key = presetName === 'reset' ? 'overview' : presetName;
+      const preset = CAMERA_PRESETS[bKey][key] || CAMERA_PRESETS[bKey].overview;
+
+      if (webglOk && camera && controls) {
+        camAnim = {
+          startPos: camera.position.clone(),
+          endPos: new THREE.Vector3(...preset.pos),
+          startTarget: controls.target.clone(),
+          endTarget: new THREE.Vector3(...preset.target),
+          t: 0
+        };
+      }
+      showToast(`Camera: ${presetName === 'reset' ? 'Reset Orbit' : presetName.toUpperCase()}`);
+    }
+
+    function initWebGL() {
+      try {
+        renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color('#09101f');
+        scene.fog = new THREE.FogExp2('#09101f', 0.016);
+
+        const w = viewport.clientWidth || 800;
+        const h = viewport.clientHeight || 560;
+        camera = new THREE.PerspectiveCamera(44, w / h, 0.1, 150);
+        camera.position.set(12.5, 9.2, 13.5);
+
+        controls = new OrbitControls(camera, canvas);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.06;
+        controls.target.set(0, 2.2, 0);
+        controls.minDistance = 4.5;
+        controls.maxDistance = 34;
+        controls.maxPolarAngle = Math.PI * 0.49;
+
+        // Lighting
+        const hemi = new THREE.HemisphereLight('#e2e8f0', '#1e293b', 1.0);
+        hemi.position.set(0, 24, 0);
+        scene.add(hemi);
+
+        const sun = new THREE.DirectionalLight('#ffffff', 1.35);
+        sun.position.set(14, 20, 15);
+        sun.castShadow = true;
+        sun.shadow.mapSize.width = 2048;
+        sun.shadow.mapSize.height = 2048;
+        sun.shadow.camera.near = 2;
+        sun.shadow.camera.far = 55;
+        const d = 15;
+        sun.shadow.camera.left = -d;
+        sun.shadow.camera.right = d;
+        sun.shadow.camera.top = d;
+        sun.shadow.camera.bottom = -d;
+        scene.add(sun);
+
+        const rim = new THREE.DirectionalLight('#38bdf8', 0.4);
+        rim.position.set(-12, 9, -12);
+        scene.add(rim);
+
+        structureGroup = new THREE.Group();
+        equipmentGroup = new THREE.Group();
+        scene.add(structureGroup);
+        scene.add(equipmentGroup);
+      } catch (e) {
+        webglOk = false;
+        rendererModeTag.textContent = '2D Isometric Fallback • Click Nodes';
+      }
+    }
+
+    function makeStdMat(hex, roughness = 0.55, metalness = 0.15) {
+      return new THREE.MeshStandardMaterial({ color: hex, roughness, metalness });
+    }
+
+    function addShellBox(w, h, d, x, y, z, hex, part) {
+      const mat = makeStdMat(hex, 0.75, 0.08);
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+      mesh.position.set(x, y, z);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      structureGroup.add(mesh);
+      shellItems.push({ mesh, part, baseMat: mat });
+      return mesh;
+    }
+
+    function addEquipPart(parent, equipId, geo, x, y, z, baseHex, primaryDisc, secondaryDisc = null, rot = [0, 0, 0]) {
+      const mat = makeStdMat(baseHex, 0.42, 0.25);
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.set(x, y, z);
+      mesh.rotation.set(rot[0], rot[1], rot[2]);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      mesh.userData.equipId = equipId;
+      parent.add(mesh);
+      return { mesh, baseHex, primaryDisc, secondaryDisc };
+    }
+
+    function rebuildSceneGeometry() {
+      // Build callout HTML badges regardless of WebGL / 2D fallback
+      labelsOverlay.innerHTML = '';
+
+      if (!webglOk) {
+        draw2DFallback();
+        return;
+      }
+
+      while (structureGroup.children.length > 0) structureGroup.remove(structureGroup.children[0]);
+      while (equipmentGroup.children.length > 0) equipmentGroup.remove(equipmentGroup.children[0]);
+      shellItems = [];
+      equipNodeEntries = [];
+
+      // Lot & Grid Helper
+      addShellBox(26, 0.25, 26, 0, -0.125, 0, '#131d31', 'ground');
+      const grid = new THREE.GridHelper(24, 24, '#334155', '#1e293b');
+      grid.position.y = 0.01;
+      structureGroup.add(grid);
+
+      if (state.buildingType === 'residential') {
+        // ---------------------------------------------------------------------
+        // RESIDENTIAL (IRC 1-/2-FAMILY DWELLING)
+        // ---------------------------------------------------------------------
+        addShellBox(8.2, 0.3, 6.2, 0, 0.15, 0, '#475569', 'slab');
+        addShellBox(7.8, 0.18, 5.8, 0, 2.3, 0, '#cbd5e1', 'floor');
+        addShellBox(7.8, 0.18, 5.8, 0, 4.5, 0, '#cbd5e1', 'floor');
+
+        // Back & Left solid walls
+        addShellBox(7.8, 4.2, 0.22, 0, 2.4, -2.8, '#e2e8f0', 'wall');
+        addShellBox(0.22, 4.2, 5.6, -3.8, 2.4, 0, '#e2e8f0', 'wall');
+        // Interior partition wall separating Mech/Utility closet
+        addShellBox(0.16, 2.1, 3.0, -0.3, 1.35, -1.3, '#cbd5e1', 'interior');
+
+        // Front & Right cutaway walls
+        addShellBox(7.8, 4.2, 0.22, 0, 2.4, 2.8, '#94a3b8', 'cutaway');
+        addShellBox(0.22, 4.2, 5.6, 3.8, 2.4, 0, '#94a3b8', 'cutaway');
+
+        // Pitched Gable Roof (Rear kept, Front cutaway)
+        const rearRoof = addShellBox(8.4, 0.22, 3.9, 0, 5.55, -1.4, '#334155', 'roof');
+        rearRoof.rotation.x = Math.PI * 0.19;
+        const frontRoof = addShellBox(8.4, 0.22, 3.9, 0, 5.55, 1.4, '#475569', 'cutaway');
+        frontRoof.rotation.x = -Math.PI * 0.19;
+
+        // 1. Exterior Heat Pump Condenser on Grade Pad
+        {
+          const g = new THREE.Group();
+          const meshes = [];
+          meshes.push(addEquipPart(g, 'condenser_rtu', new THREE.BoxGeometry(1.9, 0.16, 1.9), 5.3, 0.08, 0.4, '#64748b', 'zoning_sign'));
+          meshes.push(addEquipPart(g, 'condenser_rtu', new THREE.BoxGeometry(1.15, 1.1, 1.15), 5.3, 0.71, 0.4, '#38bdf8', 'mechanical', 'zoning_sign'));
+          meshes.push(addEquipPart(g, 'condenser_rtu', new THREE.CylinderGeometry(0.4, 0.4, 0.08, 20), 5.3, 1.3, 0.4, '#0f172a', 'electrical'));
+          meshes.push(addEquipPart(g, 'condenser_rtu', new THREE.BoxGeometry(3.5, 0.09, 0.09), 3.2, 0.48, -0.3, '#f59e0b', 'mechanical'));
+          equipmentGroup.add(g);
+          equipNodeEntries.push({
+            id: 'condenser_rtu',
+            group: g,
+            meshes,
+            anchor: new THREE.Vector3(5.3, 1.65, 0.4),
+            iso2D: { x: 0.76, y: 0.66 }
+          });
+        }
+
+        // 2. Gas Furnace / Air Handler (Utility Room)
+        {
+          const g = new THREE.Group();
+          const meshes = [];
+          meshes.push(addEquipPart(g, 'furnace_ahu', new THREE.BoxGeometry(1.05, 1.4, 1.0), -2.3, 1.0, -1.6, '#38bdf8', 'mechanical', 'fuel_gas'));
+          meshes.push(addEquipPart(g, 'furnace_ahu', new THREE.BoxGeometry(1.05, 0.55, 1.0), -2.3, 1.98, -1.6, '#7dd3fc', 'mechanical'));
+          meshes.push(addEquipPart(g, 'furnace_ahu', new THREE.BoxGeometry(1.4, 0.08, 0.08), -1.5, 1.25, -2.2, '#fbbf24', 'fuel_gas'));
+          equipmentGroup.add(g);
+          equipNodeEntries.push({
+            id: 'furnace_ahu',
+            group: g,
+            meshes,
+            anchor: new THREE.Vector3(-2.3, 2.25, -1.6),
+            iso2D: { x: 0.31, y: 0.57 }
+          });
+        }
+
+        // 3. Supply / Return Ductwork (Main & Attic Trunk + Branches)
+        {
+          const g = new THREE.Group();
+          const meshes = [];
+          meshes.push(addEquipPart(g, 'ductwork', new THREE.BoxGeometry(5.2, 0.34, 0.55), 0.3, 2.7, -1.4, '#38bdf8', 'mechanical', 'energy'));
+          meshes.push(addEquipPart(g, 'ductwork', new THREE.BoxGeometry(0.4, 0.32, 3.0), 1.4, 2.7, 0.2, '#7dd3fc', 'mechanical', 'energy'));
+          meshes.push(addEquipPart(g, 'ductwork', new THREE.BoxGeometry(4.4, 0.32, 0.5), 0.2, 4.85, -0.6, '#38bdf8', 'mechanical', 'energy'));
+          equipmentGroup.add(g);
+          equipNodeEntries.push({
+            id: 'ductwork',
+            group: g,
+            meshes,
+            anchor: new THREE.Vector3(1.2, 3.25, -0.6),
+            iso2D: { x: 0.52, y: 0.44 }
+          });
+        }
+
+        // 4. Tankless / Gas Water Heater
+        {
+          const g = new THREE.Group();
+          const meshes = [];
+          meshes.push(addEquipPart(g, 'water_heater', new THREE.CylinderGeometry(0.36, 0.36, 1.35, 20), -1.0, 0.98, -1.9, '#fbbf24', 'fuel_gas', 'mechanical'));
+          meshes.push(addEquipPart(g, 'water_heater', new THREE.BoxGeometry(0.08, 0.85, 0.08), -0.65, 1.35, -1.9, '#38bdf8', 'mechanical'));
+          equipmentGroup.add(g);
+          equipNodeEntries.push({
+            id: 'water_heater',
+            group: g,
+            meshes,
+            anchor: new THREE.Vector3(-1.0, 1.85, -1.9),
+            iso2D: { x: 0.39, y: 0.61 }
+          });
+        }
+
+        // 5. Kitchen Exhaust Hood (Residential Range Hood / Commercial Type I Node)
+        {
+          const g = new THREE.Group();
+          const meshes = [];
+          meshes.push(addEquipPart(g, 'kitchen_hood', new THREE.BoxGeometry(1.35, 0.3, 0.85), 1.8, 3.65, -2.1, '#f43f5e', 'fire', 'mechanical'));
+          meshes.push(addEquipPart(g, 'kitchen_hood', new THREE.BoxGeometry(0.36, 0.9, 0.36), 1.8, 4.2, -2.1, '#fb7185', 'fire'));
+          equipmentGroup.add(g);
+          equipNodeEntries.push({
+            id: 'kitchen_hood',
+            group: g,
+            meshes,
+            anchor: new THREE.Vector3(1.8, 4.35, -2.1),
+            iso2D: { x: 0.61, y: 0.47 }
+          });
+        }
+
+        // 6. Boiler / Hydronic Loop
+        {
+          const g = new THREE.Group();
+          const meshes = [];
+          meshes.push(addEquipPart(g, 'boiler_hydronic', new THREE.BoxGeometry(0.95, 1.15, 0.85), -2.4, 0.88, 0.6, '#c084fc', 'mechanical', 'energy'));
+          meshes.push(addEquipPart(g, 'boiler_hydronic', new THREE.CylinderGeometry(0.22, 0.22, 0.55, 16), -1.65, 1.35, 0.6, '#38bdf8', 'mechanical'));
+          meshes.push(addEquipPart(g, 'boiler_hydronic', new THREE.BoxGeometry(2.6, 0.09, 0.09), -1.0, 0.55, 0.9, '#a855f7', 'energy'));
+          equipmentGroup.add(g);
+          equipNodeEntries.push({
+            id: 'boiler_hydronic',
+            group: g,
+            meshes,
+            anchor: new THREE.Vector3(-2.3, 1.75, 0.6),
+            iso2D: { x: 0.27, y: 0.68 }
+          });
+        }
+
+        // 7. Chimney / Vent Stack & Combustion Air
+        {
+          const g = new THREE.Group();
+          const meshes = [];
+          meshes.push(addEquipPart(g, 'chimney_vent', new THREE.CylinderGeometry(0.16, 0.16, 5.4, 18), -2.3, 3.8, -1.6, '#cbd5e1', 'fuel_gas', 'zoning_sign'));
+          meshes.push(addEquipPart(g, 'chimney_vent', new THREE.CylinderGeometry(0.32, 0.18, 0.28, 18), -2.3, 6.6, -1.6, '#34d399', 'zoning_sign'));
+          meshes.push(addEquipPart(g, 'chimney_vent', new THREE.BoxGeometry(0.16, 0.55, 0.55), -3.86, 1.4, -1.6, '#fbbf24', 'fuel_gas'));
+          equipmentGroup.add(g);
+          equipNodeEntries.push({
+            id: 'chimney_vent',
+            group: g,
+            meshes,
+            anchor: new THREE.Vector3(-2.3, 6.95, -1.6),
+            iso2D: { x: 0.34, y: 0.22 }
+          });
+        }
+      } else {
+        // ---------------------------------------------------------------------
+        // COMMERCIAL (IBC / IMC BUILDING WITH ROOFTOP RTU & MECH ROOM)
+        // ---------------------------------------------------------------------
+        addShellBox(11.4, 0.35, 7.6, 0, 0.175, 0, '#475569', 'slab');
+        addShellBox(11.0, 0.24, 7.2, 0, 4.8, 0, '#64748b', 'roof');
+        // Parapet walls around flat commercial roof
+        addShellBox(11.2, 0.55, 0.22, 0, 5.1, -3.5, '#334155', 'roof');
+        addShellBox(0.22, 0.55, 7.2, -5.5, 5.1, 0, '#334155', 'roof');
+        addShellBox(11.2, 0.55, 0.22, 0, 5.1, 3.5, '#475569', 'cutaway');
+        addShellBox(0.22, 0.55, 7.2, 5.5, 5.1, 0, '#475569', 'cutaway');
+
+        // Back & Left commercial walls
+        addShellBox(11.0, 4.5, 0.25, 0, 2.55, -3.5, '#cbd5e1', 'wall');
+        addShellBox(0.25, 4.5, 7.0, -5.4, 2.55, 0, '#cbd5e1', 'wall');
+        // Mechanical Room partition
+        addShellBox(0.2, 4.4, 4.2, -1.6, 2.5, -1.4, '#94a3b8', 'interior');
+
+        // Front & Right cutaway walls
+        addShellBox(11.0, 4.5, 0.25, 0, 2.55, 3.5, '#94a3b8', 'cutaway');
+        addShellBox(0.25, 4.5, 7.0, 5.4, 2.55, 0, '#94a3b8', 'cutaway');
+
+        // 1. Rooftop Packaged Heat Pump / Gas RTU on Roof Curb
+        {
+          const g = new THREE.Group();
+          const meshes = [];
+          meshes.push(addEquipPart(g, 'condenser_rtu', new THREE.BoxGeometry(2.6, 0.32, 2.0), 1.4, 5.08, -0.4, '#34d399', 'zoning_sign'));
+          meshes.push(addEquipPart(g, 'condenser_rtu', new THREE.BoxGeometry(2.45, 1.35, 1.85), 1.4, 5.9, -0.4, '#38bdf8', 'mechanical', 'zoning_sign'));
+          meshes.push(addEquipPart(g, 'condenser_rtu', new THREE.CylinderGeometry(0.45, 0.45, 0.12, 20), 0.8, 6.62, -0.4, '#0f172a', 'electrical'));
+          meshes.push(addEquipPart(g, 'condenser_rtu', new THREE.CylinderGeometry(0.45, 0.45, 0.12, 20), 2.0, 6.62, -0.4, '#0f172a', 'electrical'));
+          equipmentGroup.add(g);
+          equipNodeEntries.push({
+            id: 'condenser_rtu',
+            group: g,
+            meshes,
+            anchor: new THREE.Vector3(1.4, 7.05, -0.4),
+            iso2D: { x: 0.58, y: 0.22 }
+          });
+        }
+
+        // 2. Commercial Makeup Air / Furnace / Air Handler in Mech Room
+        {
+          const g = new THREE.Group();
+          const meshes = [];
+          meshes.push(addEquipPart(g, 'furnace_ahu', new THREE.BoxGeometry(1.5, 2.1, 1.3), -3.8, 1.4, -2.0, '#38bdf8', 'mechanical', 'fuel_gas'));
+          meshes.push(addEquipPart(g, 'furnace_ahu', new THREE.BoxGeometry(1.8, 0.1, 0.1), -2.8, 1.8, -2.8, '#fbbf24', 'fuel_gas'));
+          equipmentGroup.add(g);
+          equipNodeEntries.push({
+            id: 'furnace_ahu',
+            group: g,
+            meshes,
+            anchor: new THREE.Vector3(-3.8, 2.75, -2.0),
+            iso2D: { x: 0.25, y: 0.52 }
+          });
+        }
+
+        // 3. Commercial Supply / Return Ductwork + Fire/Smoke Dampers
+        {
+          const g = new THREE.Group();
+          const meshes = [];
+          meshes.push(addEquipPart(g, 'ductwork', new THREE.BoxGeometry(7.8, 0.48, 0.85), 0.4, 4.1, -0.4, '#38bdf8', 'mechanical', 'energy'));
+          meshes.push(addEquipPart(g, 'ductwork', new THREE.BoxGeometry(0.55, 0.45, 4.2), 2.8, 4.1, 0.6, '#7dd3fc', 'mechanical', 'energy'));
+          meshes.push(addEquipPart(g, 'ductwork', new THREE.BoxGeometry(0.22, 0.62, 1.0), -1.6, 4.1, -0.4, '#f43f5e', 'fire'));
+          equipmentGroup.add(g);
+          equipNodeEntries.push({
+            id: 'ductwork',
+            group: g,
+            meshes,
+            anchor: new THREE.Vector3(0.4, 4.65, -0.4),
+            iso2D: { x: 0.52, y: 0.41 }
+          });
+        }
+
+        // 4. Commercial Tankless / Gas Water Heater Bank
+        {
+          const g = new THREE.Group();
+          const meshes = [];
+          meshes.push(addEquipPart(g, 'water_heater', new THREE.CylinderGeometry(0.45, 0.45, 1.75, 20), -2.4, 1.22, -2.4, '#fbbf24', 'fuel_gas', 'mechanical'));
+          meshes.push(addEquipPart(g, 'water_heater', new THREE.BoxGeometry(0.55, 0.9, 0.35), -2.4, 1.7, -1.5, '#38bdf8', 'mechanical'));
+          equipmentGroup.add(g);
+          equipNodeEntries.push({
+            id: 'water_heater',
+            group: g,
+            meshes,
+            anchor: new THREE.Vector3(-2.4, 2.4, -2.2),
+            iso2D: { x: 0.34, y: 0.56 }
+          });
+        }
+
+        // 5. Type I Commercial Kitchen Exhaust Hood + Welded Grease Duct + Upblast Fan
+        {
+          const g = new THREE.Group();
+          const meshes = [];
+          meshes.push(addEquipPart(g, 'kitchen_hood', new THREE.BoxGeometry(2.8, 0.55, 1.35), 2.5, 2.85, -2.4, '#f43f5e', 'fire', 'mechanical'));
+          meshes.push(addEquipPart(g, 'kitchen_hood', new THREE.BoxGeometry(0.65, 2.3, 0.65), 2.5, 4.25, -2.4, '#fb7185', 'fire'));
+          meshes.push(addEquipPart(g, 'kitchen_hood', new THREE.CylinderGeometry(0.55, 0.62, 0.65, 20), 2.5, 5.65, -2.4, '#f43f5e', 'fire', 'zoning_sign'));
+          equipmentGroup.add(g);
+          equipNodeEntries.push({
+            id: 'kitchen_hood',
+            group: g,
+            meshes,
+            anchor: new THREE.Vector3(2.5, 6.25, -2.4),
+            iso2D: { x: 0.72, y: 0.32 }
+          });
+        }
+
+        // 6. Commercial Boiler / Hydronic Loop
+        {
+          const g = new THREE.Group();
+          const meshes = [];
+          meshes.push(addEquipPart(g, 'boiler_hydronic', new THREE.BoxGeometry(1.4, 1.55, 1.15), -3.8, 1.12, 0.6, '#c084fc', 'mechanical', 'energy'));
+          meshes.push(addEquipPart(g, 'boiler_hydronic', new THREE.CylinderGeometry(0.3, 0.3, 0.85, 18), -2.7, 1.75, 0.6, '#38bdf8', 'mechanical'));
+          meshes.push(addEquipPart(g, 'boiler_hydronic', new THREE.BoxGeometry(3.4, 0.12, 0.12), -2.1, 0.85, 1.3, '#a855f7', 'energy'));
+          equipmentGroup.add(g);
+          equipNodeEntries.push({
+            id: 'boiler_hydronic',
+            group: g,
+            meshes,
+            anchor: new THREE.Vector3(-3.8, 2.2, 0.6),
+            iso2D: { x: 0.24, y: 0.68 }
+          });
+        }
+
+        // 7. Commercial Chimney / Vent Stack & Combustion Air Louver
+        {
+          const g = new THREE.Group();
+          const meshes = [];
+          meshes.push(addEquipPart(g, 'chimney_vent', new THREE.CylinderGeometry(0.22, 0.22, 4.6, 18), -3.8, 4.3, -2.0, '#cbd5e1', 'fuel_gas', 'zoning_sign'));
+          meshes.push(addEquipPart(g, 'chimney_vent', new THREE.CylinderGeometry(0.42, 0.24, 0.34, 18), -3.8, 6.75, -2.0, '#34d399', 'zoning_sign'));
+          meshes.push(addEquipPart(g, 'chimney_vent', new THREE.BoxGeometry(0.2, 0.85, 0.85), -5.48, 1.6, -2.0, '#fbbf24', 'fuel_gas'));
+          equipmentGroup.add(g);
+          equipNodeEntries.push({
+            id: 'chimney_vent',
+            group: g,
+            meshes,
+            anchor: new THREE.Vector3(-3.8, 7.15, -2.0),
+            iso2D: { x: 0.29, y: 0.18 }
+          });
+        }
+      }
+
+      // Create clickable HTML overlay tags for each 3D equipment node
+      equipNodeEntries.forEach((entry) => {
+        const meta = EQUIPMENT_NODES.find((e) => e.id === entry.id);
+        const disc = DISCIPLINE_META[meta.primaryDiscipline];
+        const tag = document.createElement('button');
+        tag.type = 'button';
+        tag.dataset.equip = entry.id;
+        tag.className = 'callout-label px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-950/90 border border-slate-700 text-slate-100 shadow-lg flex items-center gap-1.5';
+        tag.innerHTML = `<span class="w-2 h-2 rounded-full" style="background:${disc.hex}"></span><span>${meta.shortName}</span>`;
+        tag.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          selectEquipment(entry.id, true);
+        });
+        labelsOverlay.appendChild(tag);
+        entry.labelEl = tag;
+      });
+
+      applyViewModeMaterials();
+      updateEquipmentHighlights();
+    }
+
+    function applyViewModeMaterials() {
+      if (!webglOk) {
+        draw2DFallback();
+        return;
+      }
+
+      shellItems.forEach(({ mesh, part, baseMat }) => {
+        if (state.viewMode === 'solid') {
+          mesh.visible = true;
+          mesh.material = baseMat;
+          baseMat.transparent = false;
+          baseMat.opacity = 1.0;
+          baseMat.depthWrite = true;
+        } else if (state.viewMode === 'cutaway') {
+          if (part === 'cutaway') {
+            mesh.visible = false;
+          } else {
+            mesh.visible = true;
+            const mat = baseMat.clone();
+            if (part === 'wall' || part === 'roof') {
+              mat.transparent = true;
+              mat.opacity = 0.72;
+            }
+            mesh.material = mat;
+          }
+        } else if (state.viewMode === 'discipline') {
+          if (part === 'cutaway') {
+            mesh.visible = false;
+          } else {
+            mesh.visible = true;
+            const mat = baseMat.clone();
+            mat.color.set(part === 'ground' ? '#0f172a' : '#1e293b');
+            mat.transparent = part !== 'ground' && part !== 'slab';
+            mat.opacity = part === 'ground' || part === 'slab' ? 0.95 : 0.25;
+            mat.depthWrite = part === 'ground' || part === 'slab';
+            mesh.material = mat;
+          }
+        }
+      });
+
+      updateEquipmentHighlights();
+    }
+
+    function updateEquipmentHighlights() {
+      if (!webglOk) {
+        draw2DFallback();
+        return;
+      }
+
+      equipNodeEntries.forEach((entry) => {
+        const isSelected = entry.id === state.selectedEquipId;
+        entry.meshes.forEach((mObj) => {
+          const discKey = mObj.primaryDisc || 'mechanical';
+          const targetHex = state.viewMode === 'discipline' ? DISCIPLINE_META[discKey].hex : mObj.baseHex;
+          mObj.mesh.material.color.set(targetHex);
+          mObj.mesh.material.emissive.set(isSelected ? targetHex : '#000000');
+          mObj.mesh.material.emissiveIntensity = isSelected ? 0.42 : 0.0;
+        });
+
+        if (entry.labelEl) {
+          entry.labelEl.style.display = state.showLabels ? 'flex' : 'none';
+          entry.labelEl.className = isSelected
+            ? 'callout-label px-2.5 py-1 rounded-full text-[11px] font-bold bg-sky-500 text-slate-950 border border-white shadow-xl flex items-center gap-1.5 z-20'
+            : 'callout-label px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-950/90 border border-slate-700 text-slate-100 shadow-lg flex items-center gap-1.5';
+        }
+      });
+    }
+
+    function projectLabelsToScreen() {
+      if (!webglOk || !state.showLabels || !camera) return;
+      const w = viewport.clientWidth;
+      const h = viewport.clientHeight;
+      const tempV = new THREE.Vector3();
+
+      equipNodeEntries.forEach((entry) => {
+        if (!entry.labelEl) return;
+        tempV.copy(entry.anchor).project(camera);
+        if (tempV.z > 1) {
+          entry.labelEl.style.opacity = '0';
+          return;
+        }
+        const x = (tempV.x * 0.5 + 0.5) * w;
+        const y = (-tempV.y * 0.5 + 0.5) * h;
+        entry.labelEl.style.opacity = '1';
+        entry.labelEl.style.left = `${x}px`;
+        entry.labelEl.style.top = `${y}px`;
+      });
+    }
+
+    // -------------------------------------------------------------------------
+    // 2D Isometric Canvas Fallback (when WebGL is unavailable)
+    // -------------------------------------------------------------------------
+    let fallbackNodes2D = [];
+    function draw2DFallback() {
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      const w = (canvas.width = viewport.clientWidth || 800);
+      const h = (canvas.height = viewport.clientHeight || 520);
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = '#0b1324';
+      ctx.fillRect(0, 0, w, h);
+
+      // Isometric building schematic
+      const cx = w * 0.48;
+      const cy = h * 0.56;
+      const bw = Math.min(w * 0.34, 240);
+      const bh = bw * 0.52;
+
+      ctx.strokeStyle = state.viewMode === 'discipline' ? '#334155' : '#64748b';
+      ctx.lineWidth = 2;
+      ctx.fillStyle = state.viewMode === 'solid' ? 'rgba(51,65,85,0.85)' : 'rgba(30,41,59,0.45)';
+
+      // Floor diamond
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - bh * 0.5);
+      ctx.lineTo(cx + bw, cy);
+      ctx.lineTo(cx, cy + bh * 0.5);
+      ctx.lineTo(cx - bw, cy);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Upper roof outline
+      const roofOffset = state.buildingType === 'commercial' ? 115 : 135;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - bh * 0.5 - roofOffset);
+      ctx.lineTo(cx + bw, cy - roofOffset);
+      ctx.lineTo(cx, cy + bh * 0.5 - roofOffset);
+      ctx.lineTo(cx - bw, cy - roofOffset);
+      ctx.closePath();
+      ctx.stroke();
+
+      // Vertical corner posts
+      [
+        [cx - bw, cy],
+        [cx + bw, cy],
+        [cx, cy - bh * 0.5],
+        [cx, cy + bh * 0.5]
+      ].forEach(([px, py]) => {
+        ctx.beginPath();
+        ctx.moveTo(px, py);
+        ctx.lineTo(px, py - roofOffset);
+        ctx.stroke();
+      });
+
+      const positions = [
+        { id: 'condenser_rtu', x: cx + bw * 0.78, y: state.buildingType === 'commercial' ? cy - roofOffset - 12 : cy + 16 },
+        { id: 'furnace_ahu',   x: cx - bw * 0.38, y: cy - 38 },
+        { id: 'ductwork',      x: cx + bw * 0.12, y: cy - 72 },
+        { id: 'water_heater',  x: cx - bw * 0.14, y: cy - 22 },
+        { id: 'kitchen_hood',  x: cx + bw * 0.36, y: cy - 48 },
+        { id: 'boiler_hydronic', x: cx - bw * 0.44, y: cy + 14 },
+        { id: 'chimney_vent',  x: cx - bw * 0.35, y: cy - roofOffset - 24 }
+      ];
+
+      fallbackNodes2D = positions;
+      positions.forEach((p) => {
+        const eq = EQUIPMENT_NODES.find((e) => e.id === p.id);
+        const disc = DISCIPLINE_META[eq.primaryDiscipline];
+        const isSel = p.id === state.selectedEquipId;
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, isSel ? 13 : 9, 0, Math.PI * 2);
+        ctx.fillStyle = disc.hex;
+        ctx.fill();
+        if (isSel) {
+          ctx.lineWidth = 3;
+          ctx.strokeStyle = '#ffffff';
+          ctx.stroke();
+        }
+
+        if (state.showLabels) {
+          ctx.font = isSel ? 'bold 11px Inter, sans-serif' : '500 11px Inter, sans-serif';
+          ctx.fillStyle = isSel ? '#38bdf8' : '#e2e8f0';
+          ctx.textAlign = 'center';
+          ctx.fillText(eq.shortName, p.x, p.y - 16);
+        }
+      });
+    }
+
+    function resizeViewport() {
+      const w = viewport.clientWidth || 800;
+      const h = viewport.clientHeight || 560;
+      if (webglOk && renderer && camera) {
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h, false);
+      } else {
+        draw2DFallback();
+      }
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      if (!webglOk) return;
+
+      if (camAnim && camera && controls) {
+        camAnim.t = Math.min(1, camAnim.t + 0.065);
+        const ease = 1 - Math.pow(1 - camAnim.t, 3);
+        camera.position.lerpVectors(camAnim.startPos, camAnim.endPos, ease);
+        controls.target.lerpVectors(camAnim.startTarget, camAnim.endTarget, ease);
+        if (camAnim.t >= 1) camAnim = null;
+      }
+
+      if (controls) controls.update();
+      if (renderer && scene && camera) {
+        renderer.render(scene, camera);
+        projectLabelsToScreen();
+      }
+    }
+
+    // =========================================================================
+    // 6. EVENT WIRING & INITIALIZATION
+    // =========================================================================
+    // Pointer click picking on 3D meshes or 2D fallback nodes
+    canvas.addEventListener('pointerdown', (e) => {
+      pointerDownPos = { x: e.clientX, y: e.clientY };
+    });
+
+    canvas.addEventListener('pointerup', (e) => {
+      const dist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
+      if (dist > 6) return; // Ignore orbit drags
+
+      const rect = canvas.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
+
+      if (!webglOk) {
+        const hit = fallbackNodes2D.find((n) => Math.hypot(n.x - clickX, n.y - clickY) <= 18);
+        if (hit) selectEquipment(hit.id, true);
+        return;
+      }
+
+      pointer.x = (clickX / rect.width) * 2 - 1;
+      pointer.y = -(clickY / rect.height) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+
+      const hits = raycaster.intersectObjects(equipmentGroup.children, true);
+      if (hits.length > 0 && hits[0].object.userData.equipId) {
+        selectEquipment(hits[0].object.userData.equipId, true);
+      }
+    });
+
+    // Building type header buttons
+    document.getElementById('btn-bldg-res').addEventListener('click', () => {
+      state.buildingType = 'residential';
+      syncParamControlsFromState();
+      rebuildSceneGeometry();
+      renderHUD();
+      applyCameraPreset('overview');
+    });
+
+    document.getElementById('btn-bldg-com').addEventListener('click', () => {
+      state.buildingType = 'commercial';
+      syncParamControlsFromState();
+      rebuildSceneGeometry();
+      renderHUD();
+      applyCameraPreset('overview');
+    });
+
+    // View mode buttons
+    document.querySelectorAll('.mode-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        state.viewMode = btn.dataset.mode;
+        document.querySelectorAll('.mode-btn').forEach((b) => {
+          b.className =
+            b.dataset.mode === state.viewMode
+              ? 'mode-btn px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-sky-500 text-slate-950 transition'
+              : 'mode-btn px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-200 hover:bg-slate-700 transition';
+        });
+        applyViewModeMaterials();
+        showToast(`View Mode: ${btn.textContent.trim()}`);
+      });
+    });
+
+    // Toggle 3D callout labels
+    document.getElementById('toggle-labels-btn').addEventListener('click', (e) => {
+      state.showLabels = !state.showLabels;
+      e.target.textContent = `3D Callout Labels: ${state.showLabels ? 'ON' : 'OFF'}`;
+      updateEquipmentHighlights();
+    });
+
+    // Camera preset buttons
+    document.querySelectorAll('.cam-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        applyCameraPreset(btn.dataset.cam);
+      });
+    });
+
+    // HUD Parameter Selectors
+    document.getElementById('param-building').addEventListener('change', (e) => {
+      state.buildingType = e.target.value;
+      syncParamControlsFromState();
+      rebuildSceneGeometry();
+      renderHUD();
+      applyCameraPreset('overview');
+    });
+
+    document.getElementById('param-action').addEventListener('change', (e) => {
+      state.actionType = e.target.value;
+      renderHUD();
+    });
+
+    document.getElementById('param-fuel').addEventListener('change', (e) => {
+      state.fuelSource = e.target.value;
+      renderHUD();
+    });
+
+    document.getElementById('param-placement').addEventListener('change', (e) => {
+      state.placement = e.target.value;
+      renderHUD();
+    });
+
+    window.addEventListener('resize', resizeViewport);
+
+    // Boot
+    initWebGL();
+    syncParamControlsFromState();
+    renderEquipmentChips();
+    rebuildSceneGeometry();
+    renderHUD();
+    resizeViewport();
+    animate();
+  </script>
+</body>
+</html>
